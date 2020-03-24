@@ -137,11 +137,6 @@ class ProtocolGame final : public Protocol
 
 		void parseToggleMount(NetworkMessage& msg);
 
-		// Imbuement
-		void parseApplyImbuement(NetworkMessage& msg);
-		void parseClearingImbuement(NetworkMessage& msg);
-		void parseCloseImbuingWindow(NetworkMessage& msg);
-
 		void parseModalWindowAnswer(NetworkMessage& msg);
 
 		void parseBrowseField(NetworkMessage& msg);
@@ -171,12 +166,6 @@ class ProtocolGame final : public Protocol
 		void parseOpenChannel(NetworkMessage& msg);
 		void parseOpenPrivateChannel(NetworkMessage& msg);
 		void parseCloseChannel(NetworkMessage& msg);
-
-		// Store methods
-		void parseStoreOpen(NetworkMessage &message);
-		void parseStoreRequestOffers(NetworkMessage &message);
-		void parseStoreBuyOffer(NetworkMessage &message);
-		void parseCoinTransfer(NetworkMessage &msg);
 
 		//Send functions
 		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel);
@@ -212,7 +201,6 @@ class ProtocolGame final : public Protocol
 		void sendCreatureOutfit(const Creature* creature, const Outfit_t& outfit);
 		void sendStats();
 		void sendBasicData();
-		void sendStoreHighlight();
 		void sendTextMessage(const TextMessage& message);
 		void sendReLoginWindow(uint8_t unfairFightReduction);
 
@@ -265,9 +253,6 @@ class ProtocolGame final : public Protocol
 		void sendSpellGroupCooldown(SpellGroup_t groupId, uint32_t time);
 
 		void sendCoinBalance();
-		
-		void parseStoreOpenTransactionHistory(NetworkMessage &msg);
-		void parseStoreRequestTransactionHistory(NetworkMessage &msg);
 
 		//tiles
 		void sendMapDescription(const Position& pos);

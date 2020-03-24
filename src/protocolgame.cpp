@@ -816,6 +816,7 @@ void ProtocolGame::parseSetOutfit(NetworkMessage& msg)
 void ProtocolGame::parseToggleMount(NetworkMessage& msg)
 {
 	bool mount = msg.getByte() != 0;
+	addGameTask(&Game::playerToggleMount, player->getID(), mount);
 }
 
 void ProtocolGame::parseUseItem(NetworkMessage& msg)
@@ -1436,17 +1437,6 @@ void ProtocolGame::sendBlessStatus()
 		msg.addByte((blessCount >= 5) ? 2 : 1); // 1 = Disabled | 2 = normal | 3 = green
 	}
 
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendStoreHighlight()
-{
-	NetworkMessage msg;
-	bool haveSale = g_game.gameStore.haveCategoryByState(StoreState_t::SALE);
-	bool haveNewItem = g_game.gameStore.haveCategoryByState(StoreState_t::NEW);
-	msg.addByte(0x19);
-	msg.addByte((haveSale) ? 1 : 0);
-	msg.addByte((haveNewItem) ? 1 : 0);
 	writeToOutputBuffer(msg);
 }
 
@@ -2701,7 +2691,6 @@ void ProtocolGame::sendAddCreature(const Creature* creature, const Position& pos
 	sendSkills();
 	sendBlessStatus();
 	sendPremiumTrigger();
-	sendStoreHighlight();
 
 	//gameworld light-settings
 	sendWorldLight(g_game.getWorldLightInfo());
