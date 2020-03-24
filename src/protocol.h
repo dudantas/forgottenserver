@@ -81,6 +81,9 @@ class Protocol : public std::enable_shared_from_this<Protocol>
 		void enableCompact() {
 			compactCrypt = true;
 		}
+		bool isCompact() {
+			return compactCrypt;
+		}
 
 		static bool RSA_decrypt(NetworkMessage& msg);
 
@@ -103,6 +106,7 @@ class Protocol : public std::enable_shared_from_this<Protocol>
 		bool encryptionEnabled = false;
 		bool checksumEnabled = true;
 		bool sequenceEnabled = false;
+		bool compactCrypt = false;
 		bool rawMessages = false;
 		uint32_t sequenceNumber = 0;
 };
