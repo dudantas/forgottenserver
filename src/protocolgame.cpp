@@ -508,9 +508,6 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0xD2: addGameTask(&Game::playerRequestOutfit, player->getID()); break;
 		case 0xD3: parseSetOutfit(msg); break;
 		case 0xD4: parseToggleMount(msg); break;
-		case 0xD5: parseApplyImbuement(msg); break;
-		case 0xD6: parseClearingImbuement(msg); break;
-		case 0xD7: parseCloseImbuingWindow(msg); break;
 		case 0xDC: parseAddVip(msg); break;
 		case 0xDD: parseRemoveVip(msg); break;
 		case 0xDE: parseEditVip(msg); break;
@@ -528,11 +525,6 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0xF7: parseMarketCancelOffer(msg); break;
 		case 0xF8: parseMarketAcceptOffer(msg); break;
 		case 0xF9: parseModalWindowAnswer(msg); break;
-		case 0xFA: if (!g_config.getBoolean(ConfigManager::STOREMODULES)) { parseStoreOpen(msg); } break;
-		case 0xFB: if (!g_config.getBoolean(ConfigManager::STOREMODULES)) { parseStoreRequestOffers(msg); } break;
-		case 0xFC: if (!g_config.getBoolean(ConfigManager::STOREMODULES)) { parseStoreBuyOffer(msg); } break;
-		case 0xFD: parseStoreOpenTransactionHistory(msg); break;
-		case 0xFE: parseStoreRequestTransactionHistory(msg); break;
 
 		//case 0x77 Equip Hotkey.
 		//case 0xDF, 0xE0, 0xE1, 0xFB, 0xFC, 0xFD, 0xFE Premium Shop.
@@ -825,22 +817,6 @@ void ProtocolGame::parseSetOutfit(NetworkMessage& msg)
 void ProtocolGame::parseToggleMount(NetworkMessage& msg)
 {
 	bool mount = msg.getByte() != 0;
-}
-
-void ProtocolGame::parseApplyImbuement(NetworkMessage& msg)
-{
-	uint8_t slot = msg.getByte();
-	uint32_t imbuementId = msg.get<uint32_t>();
-	bool protectionCharm = msg.getByte() != 0x00;
-}
-
-void ProtocolGame::parseClearingImbuement(NetworkMessage& msg)
-{
-	uint8_t slot = msg.getByte();
-}
-
-void ProtocolGame::parseCloseImbuingWindow(NetworkMessage&)
-{
 }
 
 void ProtocolGame::parseUseItem(NetworkMessage& msg)
@@ -1164,6 +1140,12 @@ void ProtocolGame::parseEnableSharedPartyExperience(NetworkMessage& msg)
 	addGameTask(&Game::playerEnableSharedPartyExperience, player->getID(), sharedExpActive);
 }
 
+void ProtocolGame::parseQuestLine(NetworkMessage& msg)
+{
+	uint16_t questId = msg.get<uint16_t>();
+	addGameTask(&Game::playerShowQuestLine, player->getID(), questId);
+}
+
 void ProtocolGame::parseMarketLeave()
 {
 	addGameTask(&Game::playerLeaveMarket, player->getID());
@@ -1180,41 +1162,6 @@ void ProtocolGame::parseMarketBrowse(NetworkMessage& msg)
 	} else {
 		addGameTask(&Game::playerBrowseMarket, player->getID(), browseId);
 	}
-}
-
-void ProtocolGame::parseStoreOpen(NetworkMessage &msg)
-{
-	uint8_t serviceType = msg.getByte();
-}
-
-void ProtocolGame::parseStoreRequestOffers(NetworkMessage &message)
-{
-	//StoreService_t serviceType = SERVICE_STANDARD;
-	message.getByte(); // discard service type byte // version >= 1092
-}
-
-void ProtocolGame::parseStoreBuyOffer(NetworkMessage &message)
-{
-	uint32_t offerId = message.get<uint32_t>();
-	uint8_t productType = message.getByte(); //used only in return of a namechange offer request
-	std::string additionalInfo;
-}
-
-void ProtocolGame::parseStoreOpenTransactionHistory(NetworkMessage& msg)
-{
-	uint8_t entriesPerPage = msg.getByte();
-}
-
-void ProtocolGame::parseStoreRequestTransactionHistory(NetworkMessage& msg)
-{
-	uint32_t pageNumber = msg.get<uint32_t>();
-}
-
-void ProtocolGame::parseCoinTransfer(NetworkMessage& msg)
-{
-	std::string receiverName =msg.getString();
-	uint32_t amount = msg.get<uint32_t>();
-	updateCoinBalance();
 }
 
 void ProtocolGame::parseMarketCreateOffer(NetworkMessage& msg)
@@ -1492,7 +1439,7 @@ void ProtocolGame::sendBlessStatus()
 
 	writeToOutputBuffer(msg);
 }
-/*
+
 void ProtocolGame::sendStoreHighlight()
 {
 	NetworkMessage msg;
@@ -1503,7 +1450,7 @@ void ProtocolGame::sendStoreHighlight()
 	msg.addByte((haveNewItem) ? 1 : 0);
 	writeToOutputBuffer(msg);
 }
-*/
+
 void ProtocolGame::sendPremiumTrigger()
 {
 	if (!g_config.getBoolean(ConfigManager::FREE_PREMIUM)) {
