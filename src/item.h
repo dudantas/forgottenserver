@@ -610,6 +610,14 @@ class Item : virtual public Thing
 			getAttributes()->increaseIntAttr(type, value);
 		}
 
+		void setIsLootTrackeable(bool value) {
+			isLootTrackeable = value;
+		}
+
+		bool getIsLootTrackeable() {
+			return isLootTrackeable;
+		}
+
 		void removeAttribute(itemAttrTypes type) {
 			if (attributes) {
 				attributes->removeAttribute(type);
@@ -817,7 +825,7 @@ class Item : virtual public Thing
 		Ammo_t getAmmoType() const {
 			return items[id].ammoType;
 		}
-		uint8_t getShootRange() const {
+		uint16_t getShootRange() const {
 			if (hasAttribute(ITEM_ATTRIBUTE_SHOOTRANGE)) {
 				return getIntAttr(ITEM_ATTRIBUTE_SHOOTRANGE);
 			}
@@ -1024,6 +1032,7 @@ class Item : virtual public Thing
 		uint8_t count = 1; // number of stacked items
 
 		bool loadedFromMap = false;
+		bool isLootTrackeable = false;
 
 		//Don't add variables here, use the ItemAttribute class.
 };

@@ -24,11 +24,13 @@
 #include "game.h"
 #include "pugicast.h"
 #include "weapons.h"
+#include "events.h"
 
 extern Game g_game;
 extern Vocations g_vocations;
 extern ConfigManager g_config;
 extern Weapons* g_weapons;
+extern Events* g_events;
 
 Weapons::Weapons()
 {
@@ -367,7 +369,7 @@ bool Weapon::useFist(Player* player, Creature* target)
 	damage.primary.type = params.combatType;
 	damage.primary.value = -normal_random(0, maxDamage);
 
-	Combat::doTargetCombat(player, target, damage, params);
+	Combat::doCombatHealth(player, target, damage, params);
 	if (!player->hasFlag(PlayerFlag_NotGainSkill) && player->getAddAttackSkill()) {
 		player->addSkillAdvance(SKILL_FIST, 1);
 	}
@@ -394,7 +396,7 @@ void Weapon::internalUseWeapon(Player* player, Item* item, Creature* target, int
 		damage.primary.value = (getWeaponDamage(player, target, item) * damageModifier) / 100;
 		damage.secondary.type = getElementType();
 		damage.secondary.value = getElementDamage(player, target, item);
-		Combat::doTargetCombat(player, target, damage, params);
+		Combat::doCombatHealth(player, target, damage, params);
 	}
 
 	onUsedWeapon(player, item, target->getTile());
@@ -442,12 +444,16 @@ void Weapon::onUsedWeapon(Player* player, Item* item, Tile* destTile) const
 
 	if (breakChance != 0 && uniform_random(1, 100) <= breakChance) {
 		Weapon::decrementItemCount(item);
+		player->updateSupplyTracker(item);
 		return;
 	}
 
 	switch (action) {
 		case WEAPONACTION_REMOVECOUNT:
-			Weapon::decrementItemCount(item);
+			if(g_config.getBoolean(ConfigManager::REMOVE_WEAPON_AMMO)) {
+				Weapon::decrementItemCount(item);
+				player->updateSupplyTracker(item);
+			}
 			break;
 
 		case WEAPONACTION_REMOVECHARGE: {

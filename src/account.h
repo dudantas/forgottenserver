@@ -22,6 +22,10 @@
 
 #include "enums.h"
 
+/**
+ * @brief Account information, like characters, account name, premium
+ * coin, etc
+ */
 struct Account {
 	std::vector<std::string> characters;
 	std::string name;
@@ -29,9 +33,50 @@ struct Account {
 	time_t lastDay = 0;
 	uint32_t id = 0;
 	uint16_t premiumDays = 0;
+	uint32_t coinBalance = 0;
 	AccountType_t accountType = ACCOUNT_TYPE_NORMAL;
 
 	Account() = default;
+};
+
+/**
+ * @brief Class that handles coins transactions
+ * 
+ */
+class IOAccount {
+	public:
+		/**
+		 * @brief Get the amount of coins that the account have.
+		 * 
+		 * @param accountId Account ID to get the coins.
+		 * @return uint32_t Amount of coins.
+		 */
+		static uint32_t getCoinBalance(uint32_t accountId);
+
+		/**
+		 * @brief Add coins to the account.
+		 * 
+		 * @param accountId Account ID to add the coins
+		 * @param amount Amount of coins to be added
+		 */
+		static void addCoins(uint32_t accountId, int32_t amount);
+
+		/**
+		 * @brief Removes coins from the account.
+		 * 
+		 * @param accountId Account ID from where the coins will be removed
+		 * @param amount Amount of coins to be removed
+		 */
+		static void removeCoins(uint32_t accountId, int32_t amount);
+
+		/**
+		 * @brief Register all the transactions of coins.
+		 * 
+		 * @param accountId Account ID that made the transaction
+		 * @param coins Number of coins of the transaction
+		 * @param description Description of transaction
+		 */
+		static void registerTransaction(uint32_t accountId, int32_t coins, const std::string &description);
 };
 
 #endif

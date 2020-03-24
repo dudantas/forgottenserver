@@ -70,6 +70,8 @@ bool Events::load()
 				info.creatureOnTargetCombat = event;
 			} else if (methodName == "onHear") {
 				info.creatureOnHear = event;
+			} else if (methodName == "onDrainHealth") {
+				info.creatureOnDrainHealth = event;
 			} else {
 				std::cout << "[Warning - Events::load] Unknown creature method: " << methodName << std::endl;
 			}
@@ -120,6 +122,16 @@ bool Events::load()
 				info.playerOnGainSkillTries = event;
 			} else if (methodName == "onWrapItem") {
 				info.playerOnWrapItem = event;
+			} else if (methodName == "onRequestQuestLog") {
+				info.playerOnRequestQuestLog = event;
+			} else if (methodName == "onRequestQuestLine") {
+				info.playerOnRequestQuestLine = event;
+			} else if (methodName == "onStorageUpdate") {
+				info.playerOnStorageUpdate = event;
+			}else if (methodName == "onRemoveCount") {
+				info.playerOnRemoveCount = event;
+			}else if (methodName == "onCombat") {
+				info.playerOnCombat = event;
 			} else {
 				std::cout << "[Warning - Events::load] Unknown player method: " << methodName << std::endl;
 			}
@@ -305,6 +317,59 @@ void Events::eventCreatureOnHear(Creature* creature, Creature* speaker, const st
 	lua_pushnumber(L, type);
 
 	scriptInterface.callVoidFunction(4);
+}
+
+void Events::eventCreatureOnDrainHealth(Creature* creature, Creature* attacker, CombatType_t& typePrimary, int32_t& damagePrimary, CombatType_t& typeSecondary, int32_t& damageSecondary, TextColor_t& colorPrimary, TextColor_t& colorSecondary)
+{
+	if (info.creatureOnDrainHealth == -1) {
+		return;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventCreatureOnDrainHealth] Call stack overflow" << std::endl;
+		return;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.creatureOnDrainHealth, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.creatureOnDrainHealth);
+
+	if (creature) {
+		LuaScriptInterface::pushUserdata<Creature>(L, creature);
+		LuaScriptInterface::setCreatureMetatable(L, -1, creature);
+	} else {
+		lua_pushnil(L);
+	}
+
+	if (attacker) {
+		LuaScriptInterface::pushUserdata<Creature>(L, attacker);
+		LuaScriptInterface::setCreatureMetatable(L, -1, attacker);
+	} else {
+		lua_pushnil(L);
+	}
+
+	lua_pushnumber(L, typePrimary);
+	lua_pushnumber(L, damagePrimary);
+	lua_pushnumber(L, typeSecondary);
+	lua_pushnumber(L, damageSecondary);
+	lua_pushnumber(L, colorPrimary);
+	lua_pushnumber(L, colorSecondary);
+
+	if (scriptInterface.protectedCall(L, 8, 6) != 0) {
+		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
+	} else {
+		typePrimary = LuaScriptInterface::getNumber<CombatType_t>(L, -6);
+		damagePrimary = LuaScriptInterface::getNumber<int32_t>(L, -5);
+		typeSecondary = LuaScriptInterface::getNumber<CombatType_t>(L, -4);
+		damageSecondary = LuaScriptInterface::getNumber<int32_t>(L, -3);
+		colorPrimary = LuaScriptInterface::getNumber<TextColor_t>(L, -2);
+		colorSecondary = LuaScriptInterface::getNumber<TextColor_t>(L, -1);
+		lua_pop(L, 6);
+	}
+
+	scriptInterface.resetScriptEnv();
 }
 
 // Party
@@ -571,6 +636,33 @@ bool Events::eventPlayerOnLookInShop(Player* player, const ItemType* itemType, u
 	lua_pushnumber(L, count);
 
 	return scriptInterface.callFunction(3);
+}
+
+bool Events::eventPlayerOnRemoveCount(Player* player, Item* item)
+{
+	// Player:onMove()
+	if (info.playerOnRemoveCount == -1) {
+		return true;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventPlayerOnMove] Call stack overflow" << std::endl;
+		return false;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.playerOnRemoveCount, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.playerOnRemoveCount);
+
+	LuaScriptInterface::pushUserdata<Player>(L, player);
+	LuaScriptInterface::setMetatable(L, -1, "Player");
+
+	LuaScriptInterface::pushUserdata<Item>(L, item);
+	LuaScriptInterface::setItemMetatable(L, -1, item);
+
+	return scriptInterface.callFunction(2);
 }
 
 bool Events::eventPlayerOnMoveItem(Player* player, Item* item, uint16_t count, const Position& fromPosition, const Position& toPosition, Cylinder* fromCylinder, Cylinder* toCylinder)
@@ -956,6 +1048,138 @@ void Events::eventPlayerOnWrapItem(Player* player, Item* item)
 	scriptInterface.callVoidFunction(2);
 }
 
+void Events::eventPlayerOnCombat(Player* player, Creature* target, Item* item, CombatDamage& damage)
+{
+	// Player:onCombat(target, item, primaryDamage, primaryType, secondaryDamage, secondaryType)
+	if (info.playerOnCombat == -1) {
+		return;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventPlayerOnCombat] Call stack overflow" << std::endl;
+		return;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.playerOnCombat, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.playerOnCombat);
+
+	LuaScriptInterface::pushUserdata<Player>(L, player);
+	LuaScriptInterface::setMetatable(L, -1, "Player");
+
+	if (target) {
+		LuaScriptInterface::pushUserdata<Creature>(L, target);
+		LuaScriptInterface::setMetatable(L, -1, "Creature");
+	} else {
+		lua_pushnil(L);
+	}
+
+	if(item){
+		LuaScriptInterface::pushUserdata<Item>(L, item);
+		LuaScriptInterface::setMetatable(L, -1, "Item");
+	}else{
+		lua_pushnil(L);
+	}
+
+	LuaScriptInterface::pushCombatDamage(L, damage);
+
+	if (scriptInterface.protectedCall(L, 8, 4) != 0) {
+		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
+	} else {
+		damage.primary.value = std::abs(LuaScriptInterface::getNumber<int32_t>(L, -4));
+		damage.primary.type = LuaScriptInterface::getNumber<CombatType_t>(L, -3);
+		damage.secondary.value = std::abs(LuaScriptInterface::getNumber<int32_t>(L, -2));
+		damage.secondary.type = LuaScriptInterface::getNumber<CombatType_t>(L, -1);
+
+		lua_pop(L, 4);
+		if (damage.primary.type != COMBAT_HEALING) {
+			damage.primary.value = -damage.primary.value;
+			damage.secondary.value = -damage.secondary.value;
+		}
+	}
+
+	scriptInterface.resetScriptEnv();
+}
+
+void Events::eventPlayerOnRequestQuestLog(Player* player) {
+	// Player:onRequestQuestLog()
+	if (info.playerOnRequestQuestLog == -1) {
+		return;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventPlayerOnRequestQuestLog] Call stack overflow" << std::endl;
+		return;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.playerOnRequestQuestLog, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.playerOnRequestQuestLog);
+
+	LuaScriptInterface::pushUserdata<Player>(L, player);
+	LuaScriptInterface::setMetatable(L, -1, "Player");
+
+	scriptInterface.callVoidFunction(1);
+}
+
+void Events::eventPlayerOnRequestQuestLine(Player* player, uint16_t questId) {
+	// Player::onRequestQuestLine()
+	if (info.playerOnRequestQuestLine == -1) {
+		return;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventPlayerOnRequestQuestLine] Call stack overflow" << std::endl;
+		return;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.playerOnRequestQuestLine, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.playerOnRequestQuestLine);
+
+	LuaScriptInterface::pushUserdata<Player>(L, player);
+	LuaScriptInterface::setMetatable(L, -1, "Player");
+
+	lua_pushnumber(L, questId);
+
+	scriptInterface.callVoidFunction(2);
+}
+
+void Events::eventOnStorageUpdate(Player* player, const uint32_t key, const int32_t value, int32_t oldValue, uint64_t currentTime) {
+	// Player::onStorageUpdate(key, value, oldValue, currentTime)
+	if (info.playerOnStorageUpdate == -1) {
+		return;
+	}
+
+	if (!scriptInterface.reserveScriptEnv()) {
+		std::cout << "[Error - Events::eventOnStorageUpdate] Call stack overflow" << std::endl;
+		return;
+	}
+
+	ScriptEnvironment* env = scriptInterface.getScriptEnv();
+	env->setScriptId(info.playerOnStorageUpdate, &scriptInterface);
+
+	lua_State* L = scriptInterface.getLuaState();
+	scriptInterface.pushFunction(info.playerOnStorageUpdate);
+
+	LuaScriptInterface::pushUserdata<Player>(L, player);
+	LuaScriptInterface::setMetatable(L, -1, "Player");
+
+	lua_pushnumber(L, key);
+	lua_pushnumber(L, value);
+	lua_pushnumber(L, oldValue);
+	lua_pushnumber(L, currentTime);
+
+	scriptInterface.callVoidFunction(5);
+}
+
+// Monster
 void Events::eventMonsterOnDropLoot(Monster* monster, Container* corpse)
 {
 	// Monster:onDropLoot(corpse)
@@ -982,4 +1206,3 @@ void Events::eventMonsterOnDropLoot(Monster* monster, Container* corpse)
 
 	return scriptInterface.callVoidFunction(2);
 }
-

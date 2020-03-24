@@ -404,6 +404,8 @@ class Player final : public Creature, public Cylinder
 		}
 		bool isPremium() const;
 		void setPremiumDays(int32_t v);
+		
+		void setTibiaCoins(int32_t v);
 
 		uint16_t getHelpers() const;
 
@@ -847,14 +849,19 @@ class Player final : public Creature, public Cylinder
 		}
 
 		//inventory
+		void sendCoinBalance() {
+			if (client) {
+				client->sendCoinBalance();
+			}
+		}
 		void sendInventoryItem(slots_t slot, const Item* item) {
 			if (client) {
 				client->sendInventoryItem(slot, item);
 			}
 		}
-		void sendItems() {
+		void sendInventoryClientIds() {
 			if (client) {
-				client->sendItems();
+				client->sendInventoryClientIds();
 			}
 		}
 
@@ -926,6 +933,16 @@ class Player final : public Creature, public Cylinder
 		void sendIcons() const {
 			if (client) {
 				client->sendIcons(getClientIcons());
+			}
+		}
+		void sendClientCheck() const {
+			if (client) {
+				client->sendClientCheck();
+			}
+		}
+		void sendGameNews() const {
+			if (client) {
+				client->sendGameNews();
 			}
 		}
 		void sendMagicEffect(const Position& pos, uint8_t type) const {
@@ -1087,16 +1104,6 @@ class Player final : public Creature, public Cylinder
 				client->sendAddMarker(pos, markType, desc);
 			}
 		}
-		void sendQuestLog() {
-			if (client) {
-				client->sendQuestLog();
-			}
-		}
-		void sendQuestLine(const Quest* quest) {
-			if (client) {
-				client->sendQuestLine(quest);
-			}
-		}
 		void sendEnterWorld() {
 			if (client) {
 				client->sendEnterWorld();
@@ -1130,6 +1137,18 @@ class Player final : public Creature, public Cylinder
 		bool canDoAction() const {
 			return nextAction <= OTSYS_TIME();
 		}
+		
+		void setModuleDelay(uint8_t byteortype, int16_t delay) {
+			moduleDelayMap[byteortype] = OTSYS_TIME() + delay;
+		}
+
+		bool canRunModule(uint8_t byteortype) {
+			if (!moduleDelayMap[byteortype]) {
+				return true;
+			}
+			return moduleDelayMap[byteortype] <= OTSYS_TIME();
+		}
+		
 		uint32_t getNextActionTime() const;
 
 		Item* getWriteItem(uint32_t& windowTextId, uint16_t& maxWriteLen);
@@ -1141,6 +1160,44 @@ class Player final : public Creature, public Cylinder
 		void learnInstantSpell(const std::string& spellName);
 		void forgetInstantSpell(const std::string& spellName);
 		bool hasLearnedInstantSpell(const std::string& spellName) const;
+		
+		uint16_t getBaseXpGain() const {
+			return baseXpGain;
+		}
+		void setBaseXpGain(uint16_t value) {
+			baseXpGain = std::min<uint16_t>(std::numeric_limits<uint16_t>::max(), value);
+		}
+		
+		bool updateKillTracker(Container* corpse, const std::string& playerName, const Outfit_t creatureOutfit) const
+ 		{
+  			if (client) {
+				client->sendKillTrackerUpdate(corpse, playerName, creatureOutfit);
+				return true;
+ 			}
+
+			return false;
+ 		}
+ 
+   		void updateSupplyTracker(const Item* item)
+ 		{
+  			if (client) {
+ 				client->sendUpdateSupplyTracker(item);
+ 			}
+ 		}
+
+   		void updateImpactTracker(int32_t quantity, bool isHeal)
+ 		{
+  			if (client) {
+ 				client->sendUpdateImpactTracker(quantity, isHeal);
+ 			}
+ 		}
+
+   		void updateLootTracker(Item* item)
+ 		{
+  			if (client) {
+ 				client->sendUpdateLootTracker(item);
+ 			}
+ 		}
 
 	private:
 		std::forward_list<Condition*> getMuteConditions() const;
@@ -1185,6 +1242,7 @@ class Player final : public Creature, public Cylinder
 		uint32_t getItemTypeCount(uint16_t itemId, int32_t subType = -1) const override;
 		std::map<uint32_t, uint32_t>& getAllItemTypeCount(std::map<uint32_t, uint32_t>& countMap) const override;
 		Thing* getThing(size_t index) const override;
+		std::map<uint16_t, uint16_t> getInventoryClientIds() const;
 
 		void internalAddThing(Thing* thing) override;
 		void internalAddThing(uint32_t index, Thing* thing) override;
@@ -1195,6 +1253,7 @@ class Player final : public Creature, public Cylinder
 		std::map<uint8_t, OpenContainer> openContainers;
 		std::map<uint32_t, DepotLocker*> depotLockerMap;
 		std::map<uint32_t, DepotChest*> depotChests;
+		std::map<uint8_t, int64_t> moduleDelayMap;
 		std::map<uint32_t, int32_t> storageMap;
 
 		std::vector<OutfitEntry> outfits;
@@ -1278,10 +1337,12 @@ class Player final : public Creature, public Cylinder
 		int32_t offlineTrainingSkill = -1;
 		int32_t offlineTrainingTime = 0;
 		int32_t idleTime = 0;
+		int32_t coinBalance = 0;
 
 		uint16_t lastStatsTrainingTime = 0;
 		uint16_t staminaMinutes = 2520;
 		uint16_t maxWriteLen = 0;
+		uint16_t baseXpGain = 100;
 		int16_t lastDepotId = -1;
 
 		uint8_t soul = 0;

@@ -646,10 +646,7 @@ void Player::addStorageValue(const uint32_t key, const int32_t value, const bool
 
 		if (!isLogin) {
 			auto currentFrameTime = g_dispatcher.getDispatcherCycle();
-			if (lastQuestlogUpdate != currentFrameTime && g_game.quests.isQuestStorage(key, value, oldValue)) {
-				lastQuestlogUpdate = currentFrameTime;
-				sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your questlog has been updated.");
-			}
+			g_events->eventOnStorageUpdate(this, key, value, oldValue, currentFrameTime);
 		}
 	} else {
 		storageMap.erase(key);
@@ -1012,7 +1009,7 @@ void Player::onCreatureAppear(Creature* creature, bool isLogin)
 	Creature::onCreatureAppear(creature, isLogin);
 
 	if (isLogin && creature == this) {
-		sendItems();
+		sendInventoryClientIds();
 
 		for (int32_t slot = CONST_SLOT_FIRST; slot <= CONST_SLOT_LAST; ++slot) {
 			Item* item = inventory[slot];
@@ -1635,8 +1632,8 @@ void Player::addExperience(Creature* source, uint64_t exp, bool sendText/* = fal
 	}
 
 	if (prevLevel != level) {
-		health = getMaxHealth();
-		mana = getMaxMana();
+		health = healthMax;
+		mana = manaMax;
 
 		updateBaseSpeed();
 		setBaseSpeed(getBaseSpeed());
@@ -1712,8 +1709,8 @@ void Player::removeExperience(uint64_t exp, bool sendText/* = false*/)
 	}
 
 	if (oldLevel != level) {
-		health = getMaxHealth();
-		mana = getMaxMana();
+		health = healthMax;
+		mana = manaMax;
 
 		updateBaseSpeed();
 		setBaseSpeed(getBaseSpeed());
@@ -2443,25 +2440,19 @@ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count, 
 		return ret;
 	}
 
+	//need an exchange with source?
+	const Item* inventoryItem = getInventoryItem(static_cast<slots_t>(index));
+	if (inventoryItem && (!inventoryItem->isStackable() || inventoryItem->getID() != item->getID())) {
+		return RETURNVALUE_NEEDEXCHANGE;
+	}
+
 	//check if enough capacity
 	if (!hasCapacity(item, count)) {
 		return RETURNVALUE_NOTENOUGHCAPACITY;
 	}
 
-	ret = g_moveEvents->onPlayerEquip(const_cast<Player*>(this), const_cast<Item*>(item), static_cast<slots_t>(index), true);
-	if (ret != RETURNVALUE_NOERROR) {
-		return ret;
-	}
-
-	//need an exchange with source? (destination item is swapped with currently moved item)
-	const Item* inventoryItem = getInventoryItem(static_cast<slots_t>(index));
-	if (inventoryItem && (!inventoryItem->isStackable() || inventoryItem->getID() != item->getID())) {
-		const Cylinder* cylinder = item->getTopParent();
-		if (cylinder && (dynamic_cast<const DepotChest*>(cylinder) || dynamic_cast<const Player*>(cylinder))) {
-			return RETURNVALUE_NEEDEXCHANGE;
-		}
-
-		return RETURNVALUE_NOTENOUGHROOM;
+	if (!g_moveEvents->onPlayerEquip(const_cast<Player*>(this), const_cast<Item*>(item), static_cast<slots_t>(index), true)) {
+		return RETURNVALUE_CANNOTBEDRESSED;
 	}
 	return ret;
 }
@@ -2913,6 +2904,59 @@ std::map<uint32_t, uint32_t>& Player::getAllItemTypeCount(std::map<uint32_t, uin
 		}
 	}
 	return countMap;
+}
+
+std::map<uint16_t, uint16_t> Player::getInventoryClientIds() const
+{
+	std::map<uint16_t, uint16_t> itemMap;
+	for (int32_t i = CONST_SLOT_FIRST; i <= CONST_SLOT_LAST; i++) {
+		Item* item = inventory[i];
+		if (!item) {
+			continue;
+		}
+
+		auto rootSearch = itemMap.find(item->getClientID());
+		if (rootSearch != itemMap.end()) {
+			itemMap[item->getClientID()] = itemMap[item->getClientID()] + Item::countByType(item, -1);
+		}
+		else
+		{
+			itemMap.emplace(item->getClientID(), Item::countByType(item, -1));
+		}
+
+		const ItemType& itemType = Item::items[item->getID()];
+		if (itemType.transformEquipTo) {
+			itemMap.emplace(Item::items[itemType.transformEquipTo].clientId, 1);
+		}
+
+		if (itemType.transformDeEquipTo) {
+			itemMap.emplace(Item::items[itemType.transformDeEquipTo].clientId, 1);
+		}
+
+		if (Container* container = item->getContainer()) {
+			for (ContainerIterator it = container->iterator(); it.hasNext(); it.advance()) {
+				auto containerSearch = itemMap.find((*it)->getClientID());
+				if (containerSearch != itemMap.end()) {
+					itemMap[(*it)->getClientID()] = itemMap[(*it)->getClientID()] + Item::countByType(*it, -1);
+				}
+				else
+				{
+					itemMap.emplace((*it)->getClientID(), Item::countByType(*it, -1));
+				}
+				itemMap.emplace((*it)->getClientID(), Item::countByType(*it, -1));
+				const ItemType& itItemType = Item::items[(*it)->getID()];
+
+				if (itItemType.transformEquipTo) {
+					itemMap.emplace(Item::items[itItemType.transformEquipTo].clientId, 1);
+				}
+
+				if (itItemType.transformDeEquipTo) {
+					itemMap.emplace(Item::items[itItemType.transformDeEquipTo].clientId, 1);
+				}
+			}
+		}
+	}
+	return itemMap;
 }
 
 Thing* Player::getThing(size_t index) const
@@ -3946,6 +3990,11 @@ void Player::setPremiumDays(int32_t v)
 {
 	premiumDays = v;
 	sendBasicData();
+}
+
+void Player::setTibiaCoins(int32_t v)
+{
+	coinBalance = v;
 }
 
 PartyShields_t Player::getPartyShield(const Player* player) const

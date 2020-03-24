@@ -31,7 +31,6 @@
 #include "raids.h"
 #include "npc.h"
 #include "wildcardtree.h"
-#include "quests.h"
 
 class ServiceManager;
 class Creature;
@@ -457,9 +456,6 @@ class Game
 			return lightHour;
 		}
 
-		bool loadExperienceStages();
-		uint64_t getExperienceStage(uint32_t level);
-
 		void loadMotdNum();
 		void saveMotdNum() const;
 		const std::string& getMotdHash() const { return motdHash; }
@@ -499,11 +495,14 @@ class Game
 
 		bool reload(ReloadTypes_t reloadType);
 
+		bool itemidHasMoveevent(uint32_t itemid);
+		bool hasEffect(uint8_t effectId);
+		bool hasDistanceEffect(uint8_t effectId);
+
 		Groups groups;
 		Map map;
 		Mounts mounts;
 		Raids raids;
-		Quests quests;
 
 		std::forward_list<Item*> toDecayItems;
 

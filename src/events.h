@@ -21,7 +21,7 @@
 #define FS_EVENTS_H_BD444CC0EE167E5777E4C90C766B36DC
 
 #include "luascript.h"
-#include "const.h"
+#include "spells.h"
 
 class Party;
 class ItemType;
@@ -35,6 +35,7 @@ class Events
 		int32_t creatureOnAreaCombat = -1;
 		int32_t creatureOnTargetCombat = -1;
 		int32_t creatureOnHear = -1;
+		int32_t creatureOnDrainHealth = -1;
 
 		// Party
 		int32_t partyOnJoin = -1;
@@ -60,6 +61,11 @@ class Events
 		int32_t playerOnLoseExperience = -1;
 		int32_t playerOnGainSkillTries = -1;
 		int32_t playerOnWrapItem = -1;
+		int32_t playerOnRequestQuestLog = -1;
+		int32_t playerOnRequestQuestLine = -1;
+		int32_t playerOnStorageUpdate = -1;
+		int32_t playerOnRemoveCount = -1;
+		int32_t playerOnCombat = -1;
 
 		// Monster
 		int32_t monsterOnDropLoot = -1;
@@ -76,6 +82,7 @@ class Events
 		ReturnValue eventCreatureOnAreaCombat(Creature* creature, Tile* tile, bool aggressive);
 		ReturnValue eventCreatureOnTargetCombat(Creature* creature, Creature* target);
 		void eventCreatureOnHear(Creature* creature, Creature* speaker, const std::string& words, SpeakClasses type);
+		void eventCreatureOnDrainHealth(Creature* creature, Creature* attacker, CombatType_t& typePrimary, int32_t& damagePrimary, CombatType_t& typeSecondary, int32_t& damageSecondary, TextColor_t& colorPrimary, TextColor_t& colorSecondary);
 
 		// Party
 		bool eventPartyOnJoin(Party* party, Player* player);
@@ -101,6 +108,11 @@ class Events
 		void eventPlayerOnLoseExperience(Player* player, uint64_t& exp);
 		void eventPlayerOnGainSkillTries(Player* player, skills_t skill, uint64_t& tries);
 		void eventPlayerOnWrapItem(Player* player, Item* item);
+		bool eventPlayerOnRemoveCount(Player* player, Item * item);
+		void eventPlayerOnRequestQuestLog(Player* player);
+		void eventPlayerOnRequestQuestLine(Player* player, uint16_t questId);
+		void eventOnStorageUpdate(Player* player, const uint32_t key, const int32_t value, int32_t oldValue, uint64_t currentTime);
+		void eventPlayerOnCombat(Player* player, Creature* target, Item* item, CombatDamage& damage);
 
 		// Monster
 		void eventMonsterOnDropLoot(Monster* monster, Container* corpse);

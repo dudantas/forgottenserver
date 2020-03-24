@@ -459,9 +459,22 @@ class LuaScriptInterface
 
 		//
 		static int luaCreateCombatArea(lua_State* L);
+		
+		static int luaDoAreaCombatHealth(lua_State* L);
+		static int luaDoTargetCombatHealth(lua_State* L);
 
 		static int luaDoAreaCombat(lua_State* L);
 		static int luaDoTargetCombat(lua_State* L);
+
+		//
+		static int luaDoAreaCombatMana(lua_State* L);
+		static int luaDoTargetCombatMana(lua_State* L);
+
+		static int luaDoAreaCombatCondition(lua_State* L);
+		static int luaDoTargetCombatCondition(lua_State* L);
+
+		static int luaDoAreaCombatDispel(lua_State* L);
+		static int luaDoTargetCombatDispel(lua_State* L);
 
 		static int luaDoChallengeCreature(lua_State* L);
 
@@ -525,7 +538,6 @@ class LuaScriptInterface
 		static int luaGameGetPlayers(lua_State* L);
 		static int luaGameLoadMap(lua_State* L);
 
-		static int luaGameGetExperienceStage(lua_State* L);
 		static int luaGameGetMonsterCount(lua_State* L);
 		static int luaGameGetPlayerCount(lua_State* L);
 		static int luaGameGetNpcCount(lua_State* L);
@@ -836,6 +848,7 @@ class LuaScriptInterface
 		static int luaPlayerSetCapacity(lua_State* L);
 
 		static int luaPlayerGetFreeCapacity(lua_State* L);
+		static int luaPlayerUpdateSupplyTracker(lua_State* L);
 
 		static int luaPlayerGetDepotChest(lua_State* L);
 		static int luaPlayerGetInbox(lua_State* L);
@@ -986,6 +999,9 @@ class LuaScriptInterface
 		static int luaPlayerHasChaseMode(lua_State* L);
 		static int luaPlayerHasSecureMode(lua_State* L);
 		static int luaPlayerGetFightMode(lua_State* L);
+		
+		static int luaPlayerGetBaseXpGain(lua_State *L);
+		static int luaPlayerSetBaseXpGain(lua_State *L);
 
 		// Monster
 		static int luaMonsterCreate(lua_State* L);

@@ -42,10 +42,12 @@ class ConfigManager
 			CLASSIC_EQUIPMENT_SLOTS,
 			CLASSIC_ATTACK_SPEED,
 			SCRIPTS_CONSOLE_LOGS,
+			REMOVE_WEAPON_AMMO,
 			SERVER_SAVE_NOTIFY_MESSAGE,
 			SERVER_SAVE_CLEAN_MAP,
 			SERVER_SAVE_CLOSE,
 			SERVER_SAVE_SHUTDOWN,
+			STOREMODULES,
 			ONLINE_OFFLINE_CHARLIST,
 			YELL_ALLOW_PREMIUM,
 			FORCE_MONSTERTYPE_LOAD,
@@ -71,6 +73,8 @@ class ConfigManager
 			MYSQL_SOCK,
 			DEFAULT_PRIORITY,
 			MAP_AUTHOR,
+			STORE_IMAGES_URL,
+			VERSION_STR,
 
 			LAST_STRING_CONFIG /* this must be the last one */
 		};
@@ -103,6 +107,8 @@ class ConfigManager
 			STATUS_PORT,
 			STAIRHOP_DELAY,
 			MARKET_OFFER_DURATION,
+			VERSION_MIN,
+			VERSION_MAX,
 			CHECK_EXPIRED_MARKET_OFFERS_EACH_MINUTES,
 			MAX_MARKET_OFFERS_AT_A_TIME_PER_PLAYER,
 			EXP_FROM_PLAYERS_LEVEL_RANGE,
@@ -118,6 +124,7 @@ class ConfigManager
 
 		const std::string& getString(string_config_t what) const;
 		int32_t getNumber(integer_config_t what) const;
+		int16_t getShortNumber(integer_config_t what) const;
 		bool getBoolean(boolean_config_t what) const;
 
 	private:
