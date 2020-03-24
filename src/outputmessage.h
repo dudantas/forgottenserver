@@ -42,12 +42,11 @@ class OutputMessage : public NetworkMessage
 		void writeMessageLength() {
 			add_header(info.length);
 		}
-
-		void addCryptoHeader(bool addSequence, bool addChecksum, uint32_t& sequenceNumber) {
-			if (addSequence) {
-				add_header(sequenceNumber++);
-			} else if (addChecksum) {
+		void addCryptoHeader(uint8_t addChecksum, uint32_t& sequence) {
+			if (addChecksum == 1) {
 				add_header(adlerChecksum(buffer + outputBufferStart, info.length));
+			} else if (addChecksum == 2) {
+				add_header(sequence++);
 			}
 
 			writeMessageLength();

@@ -78,8 +78,8 @@ class Protocol : public std::enable_shared_from_this<Protocol>
 		void disableChecksum() {
 			checksumEnabled = false;
 		}
-		void enableSequence() {
-			sequenceEnabled = true;
+		void enableCompact() {
+			compactCrypt = true;
 		}
 
 		static bool RSA_decrypt(NetworkMessage& msg);

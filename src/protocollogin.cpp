@@ -145,7 +145,7 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 
 	uint16_t version = msg.get<uint16_t>();
 	if (version >= 1111) {
-		enableSequence();
+		enableCompact();
 	}
 	
 	if (version >= 971) {
