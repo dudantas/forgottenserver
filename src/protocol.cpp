@@ -36,7 +36,6 @@ void Protocol::onSendMessage(const OutputMessage_ptr& msg)
 			msg->addCryptoHeader((checksumEnabled ? 1 : 0), sequenceNumber);
 			} else {
 				msg->addCryptoHeader(2);
-				msg->addCryptoHeader(2, sequenceNumber);
 		}
 	}
 }
