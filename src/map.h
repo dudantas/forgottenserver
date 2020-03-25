@@ -126,7 +126,7 @@ class QTreeNode
 
 		QTreeLeafNode* createLeaf(uint32_t x, uint32_t y, uint32_t level);
 
-	private:
+	protected:
 		QTreeNode* child[4] = {};
 
 		bool leaf = false;
