@@ -130,6 +130,8 @@ class NetworkMessage
 			return static_cast<uint16_t>(buffer[0] | buffer[1] << 8);
 		}
 
+		int32_t decodeHeader();
+
 		bool isOverrun() const {
 			return info.overrun;
 		}
@@ -148,16 +150,6 @@ class NetworkMessage
 		}
 
 	protected:
-		struct NetworkMessageInfo {
-			MsgSize_t length = 0;
-			MsgSize_t position = INITIAL_BUFFER_POSITION;
-			bool overrun = false;
-		};
-
-		NetworkMessageInfo info;
-		uint8_t buffer[NETWORKMESSAGE_MAXSIZE];
-
-	private:
 		bool canAdd(size_t size) const {
 			return (size + info.position) < MAX_BODY_LENGTH;
 		}
@@ -169,6 +161,15 @@ class NetworkMessage
 			}
 			return true;
 		}
+
+		struct NetworkMessageInfo {
+			MsgSize_t length = 0;
+			MsgSize_t position = INITIAL_BUFFER_POSITION;
+			bool overrun = false;
+		};
+
+		NetworkMessageInfo info;
+		uint8_t buffer[NETWORKMESSAGE_MAXSIZE];
 };
 
 #endif // #ifndef __NETWORK_MESSAGE_H__

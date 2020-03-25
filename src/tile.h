@@ -20,10 +20,11 @@
 #ifndef FS_TILE_H_96C7EE7CF8CD48E59D5D554A181F0C56
 #define FS_TILE_H_96C7EE7CF8CD48E59D5D554A181F0C56
 
+#include <unordered_set>
+
 #include "cylinder.h"
 #include "item.h"
 #include "tools.h"
-#include "spectators.h"
 
 class Creature;
 class Teleport;
@@ -35,6 +36,7 @@ class BedItem;
 
 using CreatureVector = std::vector<Creature*>;
 using ItemVector = std::vector<Item*>;
+using SpectatorVec = std::unordered_set<Creature*>;
 
 enum tileflags_t : uint32_t {
 	TILESTATE_NONE = 0,
@@ -142,7 +144,7 @@ class TileItemVector : private ItemVector
 		}
 
 	private:
-		uint16_t downItemCount = 0;
+		uint32_t downItemCount = 0;
 };
 
 class Tile : public Cylinder
@@ -291,6 +293,7 @@ class Tile : public Cylinder
 		void setTileFlags(const Item* item);
 		void resetTileFlags(const Item* item);
 
+	protected:
 		Item* ground = nullptr;
 		Position tilePos;
 		uint32_t flags = 0;
