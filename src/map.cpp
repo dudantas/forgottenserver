@@ -171,8 +171,8 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 
 	if (!foundTile) {
 		static std::vector<std::pair<int32_t, int32_t>> extendedRelList {
-			                   {0, -2},
-			         {-1, -1}, {0, -1}, {1, -1},
+							   {0, -2},
+					 {-1, -1}, {0, -1}, {1, -1},
 			{-2, 0}, {-1,  0},          {1,  0}, {2, 0},
 			         {-1,  1}, {0,  1}, {1,  1},
 			                   {0,  2}
@@ -235,10 +235,9 @@ void Map::moveCreature(Creature& creature, Tile& newTile, bool forceTeleport/* =
 
 	bool teleport = forceTeleport || !newTile.getGround() || !Position::areInRange<1, 1, 0>(oldPos, newPos);
 
-	SpectatorVec spectators, newPosSpectators;
+	SpectatorVec spectators;
 	getSpectators(spectators, oldPos, true);
-	getSpectators(newPosSpectators, newPos, true);
-	spectators.addSpectators(newPosSpectators);
+	getSpectators(spectators, newPos, true);
 
 	std::vector<int32_t> oldStackPosVector;
 	for (Creature* spectator : spectators) {
@@ -341,7 +340,7 @@ void Map::getSpectatorsInternal(SpectatorVec& spectators, const Position& center
 						continue;
 					}
 
-					spectators.emplace_back(creature);
+					spectators.insert(creature);
 				}
 				leafE = leafE->leafE;
 			} else {
@@ -377,7 +376,7 @@ void Map::getSpectators(SpectatorVec& spectators, const Position& centerPos, boo
 			if (it != playersSpectatorCache.end()) {
 				if (!spectators.empty()) {
 					const SpectatorVec& cachedSpectators = it->second;
-					spectators.insert(spectators.end(), cachedSpectators.begin(), cachedSpectators.end());
+					spectators.insert(cachedSpectators.begin(), cachedSpectators.end());
 				} else {
 					spectators = it->second;
 				}
@@ -392,7 +391,7 @@ void Map::getSpectators(SpectatorVec& spectators, const Position& centerPos, boo
 				if (!onlyPlayers) {
 					if (!spectators.empty()) {
 						const SpectatorVec& cachedSpectators = it->second;
-						spectators.insert(spectators.end(), cachedSpectators.begin(), cachedSpectators.end());
+						spectators.insert(cachedSpectators.begin(), cachedSpectators.end());
 					} else {
 						spectators = it->second;
 					}
@@ -400,7 +399,7 @@ void Map::getSpectators(SpectatorVec& spectators, const Position& centerPos, boo
 					const SpectatorVec& cachedSpectators = it->second;
 					for (Creature* spectator : cachedSpectators) {
 						if (spectator->getPlayer()) {
-							spectators.emplace_back(spectator);
+							spectators.insert(spectator);
 						}
 					}
 				}
@@ -453,10 +452,6 @@ void Map::getSpectators(SpectatorVec& spectators, const Position& centerPos, boo
 void Map::clearSpectatorCache()
 {
 	spectatorCache.clear();
-}
-
-void Map::clearPlayersSpectatorCache()
-{
 	playersSpectatorCache.clear();
 }
 
