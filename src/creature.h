@@ -533,6 +533,7 @@ class Creature : virtual public Thing
 		bool forceUpdateFollowPath = false;
 		bool hiddenHealth = false;
 		bool canUseDefense = true;
+		bool moveLocked = false;
 
 		//creature script events
 		bool hasEventRegistered(CreatureEventType_t event) const {
