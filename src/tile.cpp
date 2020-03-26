@@ -414,7 +414,7 @@ void Tile::onUpdateTileItem(Item* oldItem, const ItemType& oldType, Item* newIte
 				newItem->setParent(this);
 			}
 		}
-	} else if ((oldItem->hasProperty(CONST_PROP_MOVEABLE) || oldItem->getContainer()) || (oldItem->isWrapable() && !oldItem->hasProperty(CONST_PROP_MOVEABLE) && !oldItem->hasProperty(CONST_PROP_BLOCKPATH))) {
+	} else if (oldItem->hasProperty(CONST_PROP_MOVEABLE) || oldItem->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			Cylinder* oldParent = oldItem->getParent();
@@ -443,7 +443,7 @@ void Tile::onUpdateTileItem(Item* oldItem, const ItemType& oldType, Item* newIte
 
 void Tile::onRemoveTileItem(const SpectatorVec& spectators, const std::vector<int32_t>& oldStackPosVector, Item* item)
 {
-	if (newItem->hasProperty(CONST_PROP_MOVEABLE) || newItem->getContainer()) {
+	if (item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			it->second->removeThing(item, item->getItemCount());
