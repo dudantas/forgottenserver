@@ -1383,13 +1383,19 @@ void ProtocolGame::sendBasicData()
 		msg.add<uint32_t>(0);
 	}
 	msg.addByte(player->getVocation()->getClientId());
-	msg.addByte(player->getVocation()->getId() != VOCATION_NONE ? 0x01 : 0x00);
-	
-	msg.add<uint16_t>(0xFF); // number of known spells
-	for (uint8_t spellId = 0x00; spellId < 0xFF; spellId++) {
-		msg.addByte(spellId);
+
+	// Prey window
+	if (player->getVocation()->getId() == 0) {
+		msg.addByte(0);
+	} else {
+		msg.addByte(1); // has reached Main (allow player to open Prey window)
 	}
 
+	std::list<uint16_t> spellsList = g_spells->getSpellsByVocation(player->getVocationId());
+	msg.add<uint16_t>(spellsList.size());
+	for (uint8_t sid : spellsList) {
+		msg.addByte(sid);
+	}
 	writeToOutputBuffer(msg);
 }
 
@@ -1397,7 +1403,7 @@ void ProtocolGame::sendBlessStatus()
 {
 	NetworkMessage msg;
 	uint8_t blessCount = 0;
-	uint8_t maxBlessings = (player->operatingSystem == CLIENTOS_WINDOWS) ? 8 : 6;
+	uint8_t maxBlessings = (player->operatingSystem == CLIENTOS_NEW_WINDOWS) ? 8 : 6;
 	for (int i = 1; i <= maxBlessings; i++) {
 		if (player->hasBlessing(i)) {
 			blessCount++;
