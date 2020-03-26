@@ -31,8 +31,8 @@ extern Weapons* g_weapons;
 
 Items::Items()
 {
-	items.reserve(30000);
-	nameToItems.reserve(30000);
+	items.reserve(40000);
+	nameToItems.reserve(40000);
 }
 
 void Items::clear()
@@ -59,7 +59,7 @@ bool Items::reload()
 
 constexpr auto OTBI = OTB::Identifier{{'O','T', 'B', 'I'}};
 
-bool Items::loadFromOtb(const std::string& file)
+FILELOADER_ERRORS Items::loadFromOtb(const std::string& file)
 {
 	OTB::Loader loader{file, OTBI};
 
@@ -72,27 +72,27 @@ bool Items::loadFromOtb(const std::string& file)
 		//0x01 = version data
 		uint32_t flags;
 		if (!props.read<uint32_t>(flags)) {
-			return false;
+			return ERROR_INVALID_FORMAT;
 		}
 
 		uint8_t attr;
 		if (!props.read<uint8_t>(attr)) {
-			return false;
+			return ERROR_INVALID_FORMAT;
 		}
 
 		if (attr == ROOT_ATTR_VERSION) {
 			uint16_t datalen;
 			if (!props.read<uint16_t>(datalen)) {
-				return false;
+				return ERROR_INVALID_FORMAT;
 			}
 
 			if (datalen != sizeof(VERSIONINFO)) {
-				return false;
+				return ERROR_INVALID_FORMAT;
 			}
 
 			VERSIONINFO vi;
 			if (!props.read(vi)) {
-				return false;
+				return ERROR_INVALID_FORMAT;
 			}
 
 			majorVersion = vi.dwMajorVersion; //items otb format file version
@@ -105,21 +105,21 @@ bool Items::loadFromOtb(const std::string& file)
 		std::cout << "[Warning - Items::loadFromOtb] items.otb using generic client version." << std::endl;
 	} else if (majorVersion != 3) {
 		std::cout << "Old version detected, a newer version of items.otb is required." << std::endl;
-		return false;
-	} else if (minorVersion < CLIENT_VERSION_1098) {
+		return ERROR_INVALID_FORMAT;
+	} else if (minorVersion < CLIENT_VERSION_1140) {
 		std::cout << "A newer version of items.otb is required." << std::endl;
-		return false;
+		return ERROR_INVALID_FORMAT;
 	}
 
-	for (auto& itemNode : root.children) {
+	for (auto & itemNode : root.children) {
 		PropStream stream;
 		if (!loader.getProps(itemNode, stream)) {
-			return false;
+			return ERROR_INVALID_FORMAT;
 		}
 
 		uint32_t flags;
 		if (!stream.read<uint32_t>(flags)) {
-			return false;
+			return ERROR_INVALID_FORMAT;
 		}
 
 		uint16_t serverId = 0;
@@ -134,55 +134,55 @@ bool Items::loadFromOtb(const std::string& file)
 		while (stream.read<uint8_t>(attrib)) {
 			uint16_t datalen;
 			if (!stream.read<uint16_t>(datalen)) {
-				return false;
+				return ERROR_INVALID_FORMAT;
 			}
 
 			switch (attrib) {
 				case ITEM_ATTR_SERVERID: {
 					if (datalen != sizeof(uint16_t)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
 					if (!stream.read<uint16_t>(serverId)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
-					if (serverId > 30000 && serverId < 30100) {
-						serverId -= 30000;
+					if (serverId > 40000 && serverId < 40100) {
+						serverId -= 40000;
 					}
 					break;
 				}
 
 				case ITEM_ATTR_CLIENTID: {
 					if (datalen != sizeof(uint16_t)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
 					if (!stream.read<uint16_t>(clientId)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 					break;
 				}
 
 				case ITEM_ATTR_SPEED: {
 					if (datalen != sizeof(uint16_t)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
 					if (!stream.read<uint16_t>(speed)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 					break;
 				}
 
 				case ITEM_ATTR_LIGHT2: {
 					if (datalen != sizeof(lightBlock2)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
 					lightBlock2 lb2;
 					if (!stream.read(lb2)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
 					lightLevel = static_cast<uint8_t>(lb2.lightLevel);
@@ -192,22 +192,22 @@ bool Items::loadFromOtb(const std::string& file)
 
 				case ITEM_ATTR_TOPORDER: {
 					if (datalen != sizeof(uint8_t)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
 					if (!stream.read<uint8_t>(alwaysOnTopOrder)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 					break;
 				}
 
 				case ITEM_ATTR_WAREID: {
 					if (datalen != sizeof(uint16_t)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 
 					if (!stream.read<uint16_t>(wareId)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 					break;
 				}
@@ -215,7 +215,7 @@ bool Items::loadFromOtb(const std::string& file)
 				default: {
 					//skip unknown attributes
 					if (!stream.skip(datalen)) {
-						return false;
+						return ERROR_INVALID_FORMAT;
 					}
 					break;
 				}
@@ -255,7 +255,7 @@ bool Items::loadFromOtb(const std::string& file)
 			case ITEM_GROUP_DEPRECATED:
 				break;
 			default:
-				return false;
+				return ERROR_INVALID_FORMAT;
 		}
 
 		iType.blockSolid = hasBitSet(FLAG_BLOCK_SOLID, flags);
@@ -289,7 +289,7 @@ bool Items::loadFromOtb(const std::string& file)
 	}
 
 	items.shrink_to_fit();
-	return true;
+	return ERROR_NONE;
 }
 
 bool Items::loadFromXml()
@@ -310,7 +310,11 @@ bool Items::loadFromXml()
 
 		pugi::xml_attribute fromIdAttribute = itemNode.attribute("fromid");
 		if (!fromIdAttribute) {
-			std::cout << "[Warning - Items::loadFromXml] No item id found" << std::endl;
+			if (idAttribute) {
+				std::cout << "[Warning - Items::loadFromXml] No item id (" << idAttribute.value() << ") found" << std::endl;
+			} else {
+				std::cout << "[Warning - Items::loadFromXml] No item id found" << std::endl;
+			}
 			continue;
 		}
 
@@ -326,8 +330,6 @@ bool Items::loadFromXml()
 			parseItemNode(itemNode, id++);
 		}
 	}
-
-	buildInventoryList();
 	return true;
 }
 
@@ -355,8 +357,8 @@ void Items::buildInventoryList()
 
 void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 {
-	if (id > 30000 && id < 30100) {
-		id -= 30000;
+	if (id > 40000 && id < 40100) {
+		id -= 40000;
 
 		if (id >= items.size()) {
 			items.resize(id + 1);

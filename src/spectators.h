@@ -24,17 +24,17 @@
 
 class Creature;
 
-class SpectatorVec
+class SpectatorHashSet
 {
 	using Vec = std::vector<Creature*>;
 	using Iterator = Vec::iterator;
 	using ConstIterator = Vec::const_iterator;
 public:
-	SpectatorVec() {
+	SpectatorHashSet() {
 		vec.reserve(32);
 	}
 
-	void addSpectators(const SpectatorVec& spectators) {
+	void addSpectators(const SpectatorHashSet& spectators) {
 		const size_t size = vec.size();
 		for (Creature* spectator : spectators.vec) {
 			bool duplicate = false;

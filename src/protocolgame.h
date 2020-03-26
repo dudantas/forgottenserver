@@ -50,7 +50,7 @@ struct TextMessage
 	} primary, secondary;
 
 	TextMessage() = default;
-	TextMessage(MessageClasses type, std::string text) : type(type), text(std::move(text)) {}
+	TextMessage(MessageClasses initType, std::string initText) : type(initType), text(std::move(initText)) {}
 };
 
 class ProtocolGame final : public Protocol
@@ -64,9 +64,9 @@ class ProtocolGame final : public Protocol
 			return "gameworld protocol";
 		}
 
-		explicit ProtocolGame(Connection_ptr connection) : Protocol(connection) {}
+		explicit ProtocolGame(Connection_ptr initConnection) : Protocol(initConnection) {}
 
-		void login(const std::string& name, uint32_t accountId, OperatingSystem_t operatingSystem);
+		void login(const std::string& name, uint32_t accnumber, OperatingSystem_t operatingSystem);
 		void logout(bool displayEffect, bool forced);
 
 		void AddItem(NetworkMessage& msg, const Item* item);
@@ -106,11 +106,10 @@ class ProtocolGame final : public Protocol
 		void parseFightModes(NetworkMessage& msg);
 		void parseAttack(NetworkMessage& msg);
 		void parseFollow(NetworkMessage& msg);
-		void parseEquipObject(NetworkMessage& msg);
 
 		void parseBugReport(NetworkMessage& msg);
 		void parseDebugAssert(NetworkMessage& msg);
-		void parseRuleViolationReport(NetworkMessage& msg);
+		void parseRuleViolationReport(NetworkMessage &msg);
 
 		void parseThrow(NetworkMessage& msg);
 		void parseUseItemEx(NetworkMessage& msg);
@@ -121,7 +120,6 @@ class ProtocolGame final : public Protocol
 		void parseUpdateContainer(NetworkMessage& msg);
 		void parseTextWindow(NetworkMessage& msg);
 		void parseHouseWindow(NetworkMessage& msg);
-		void parseWrapItem(NetworkMessage& msg);
 
 		void parseLookInShop(NetworkMessage& msg);
 		void parsePlayerPurchase(NetworkMessage& msg);
@@ -186,7 +184,7 @@ class ProtocolGame final : public Protocol
 		void sendSkills();
 		void sendPing();
 		void sendPingBack();
-		void sendCreatureTurn(const Creature* creature, uint32_t stackPos);
+		void sendCreatureTurn(const Creature* creature, uint32_t stackpos);
 		void sendCreatureSay(const Creature* creature, SpeakClasses type, const std::string& text, const Position* pos = nullptr);
 
 		// Unjust Panel
@@ -210,7 +208,7 @@ class ProtocolGame final : public Protocol
 		void sendCreatureWalkthrough(const Creature* creature, bool walkthrough);
 		void sendCreatureShield(const Creature* creature);
 		void sendCreatureSkull(const Creature* creature);
-		void sendCreatureType(uint32_t creatureId, uint8_t creatureType);
+		void sendCreatureType(const Creature* creature, uint8_t creatureType);
 		void sendCreatureHelpers(uint32_t creatureId, uint16_t helpers);
 
 		void sendShop(Npc* npc, const ShopInfoList& itemList);
@@ -245,7 +243,7 @@ class ProtocolGame final : public Protocol
 		void sendFightModes();
 
 		void sendCreatureLight(const Creature* creature);
-		void sendWorldLight(LightInfo lightInfo);
+		void sendWorldLight(const LightInfo& lightInfo);
 
 		void sendCreatureSquare(const Creature* creature, SquareColor_t color);
 
@@ -284,8 +282,8 @@ class ProtocolGame final : public Protocol
 		//analyzers
 		void sendKillTrackerUpdate(Container* corpse, const std::string& name, const Outfit_t creatureOutfit);
 		void sendUpdateSupplyTracker(const Item* item);
- 		void sendUpdateImpactTracker(int32_t quantity, bool isHeal);
- 		void sendUpdateLootTracker(Item* item);
+		void sendUpdateImpactTracker(int32_t quantity, bool isHeal);
+		void sendUpdateLootTracker(Item* item);
 
 		//Help functions
 

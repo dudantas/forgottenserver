@@ -36,14 +36,14 @@ class ProtocolLogin : public Protocol
 			return "login protocol";
 		}
 
-		explicit ProtocolLogin(Connection_ptr connection) : Protocol(connection) {}
+		explicit ProtocolLogin(Connection_ptr loginConnection) : Protocol(loginConnection) {}
 
-		void onRecvFirstMessage(NetworkMessage& msg) override;
+		void onRecvFirstMessage(NetworkMessage& msg);
 
 	private:
 		void disconnectClient(const std::string& message, uint16_t version);
 
-		void getCharacterList(const std::string& accountName, const std::string& password, const std::string& token, uint16_t version);
+		void getCharacterList(const std::string& accountName, const std::string& password, uint16_t version);
 };
 
 #endif

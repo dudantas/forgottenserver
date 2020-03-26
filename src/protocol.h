@@ -26,7 +26,7 @@
 class Protocol : public std::enable_shared_from_this<Protocol>
 {
 	public:
-		explicit Protocol(Connection_ptr connection) : connection(connection) {}
+		explicit Protocol(Connection_ptr initConnection) : connection(initConnection) {}
 		virtual ~Protocol() = default;
 
 		// non-copyable
@@ -58,22 +58,22 @@ class Protocol : public std::enable_shared_from_this<Protocol>
 		}
 
 		void send(OutputMessage_ptr msg) const {
-			if (auto connection = getConnection()) {
-				connection->send(msg);
+			if (auto conn = getConnection()) {
+				conn->send(msg);
 			}
 		}
 
 	protected:
 		void disconnect() const {
-			if (auto connection = getConnection()) {
-				connection->close();
+			if (auto conn = getConnection()) {
+				conn->close();
 			}
 		}
 		void enableXTEAEncryption() {
 			encryptionEnabled = true;
 		}
-		void setXTEAKey(xtea::key key) {
-			this->key = std::move(key);
+		void setXTEAKey(const uint32_t* newKey) {
+			memcpy(this->key, newKey, sizeof(*newKey) * 4);
 		}
 		void disableChecksum() {
 			checksumEnabled = false;
@@ -85,6 +85,8 @@ class Protocol : public std::enable_shared_from_this<Protocol>
 			return compactCrypt;
 		}
 
+		void XTEA_encrypt(OutputMessage& msg) const;
+		bool XTEA_decrypt(NetworkMessage& msg) const;
 		static bool RSA_decrypt(NetworkMessage& msg);
 
 		void setRawMessages(bool value) {
@@ -92,23 +94,17 @@ class Protocol : public std::enable_shared_from_this<Protocol>
 		}
 
 		virtual void release() {}
-
-	private:
-		void XTEA_encrypt(OutputMessage& msg) const;
-		bool XTEA_decrypt(NetworkMessage& msg) const;
-
 		friend class Connection;
 
 		OutputMessage_ptr outputBuffer;
-
+	private:
 		const ConnectionWeak_ptr connection;
-		xtea::key key;
+		uint32_t key[4] = {};
+		uint32_t sequenceNumber = 0;
 		bool encryptionEnabled = false;
 		bool checksumEnabled = true;
-		bool sequenceEnabled = false;
 		bool compactCrypt = false;
 		bool rawMessages = false;
-		uint32_t sequenceNumber = 0;
 };
 
 #endif

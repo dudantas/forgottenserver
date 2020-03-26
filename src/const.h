@@ -230,8 +230,6 @@ enum SpeakClasses : uint8_t {
 };
 
 enum MessageClasses : uint8_t {
-	MESSAGE_STATUS_CONSOLE_BLUE = 4, /*FIXME Blue message in the console*/
-
 	MESSAGE_STATUS_CONSOLE_RED = 13, /*Red message in the console*/
 
 	MESSAGE_STATUS_DEFAULT = 17, /*White message at the bottom of the game window and in the console*/
@@ -471,6 +469,25 @@ enum item_t : uint16_t {
 
 	ITEM_DEPOT_NULL = 25452, // for internal use
 	ITEM_GOLD_POUCH = 26377,
+	TRANSFORM_BOX_ID = 26054, // for internal use
+
+	ITEM_DEPOT_I = 25453,
+	ITEM_DEPOT_II = 25454,
+	ITEM_DEPOT_III = 25455,
+	ITEM_DEPOT_IV = 25456,
+	ITEM_DEPOT_V = 25457,
+	ITEM_DEPOT_VI = 25458,
+	ITEM_DEPOT_VII = 25459,
+	ITEM_DEPOT_VIII = 25460,
+	ITEM_DEPOT_IX = 25461,
+	ITEM_DEPOT_X = 25462,
+	ITEM_DEPOT_XI = 25463,
+	ITEM_DEPOT_XII = 25464,
+	ITEM_DEPOT_XIII = 25465,
+	ITEM_DEPOT_XIV = 25466,
+	ITEM_DEPOT_XV = 25467,
+	ITEM_DEPOT_XVI = 25468,
+	ITEM_DEPOT_XVII = 25469,
 
 	ITEM_FIREFIELD_PVP_FULL = 1487,
 	ITEM_FIREFIELD_PVP_MEDIUM = 1488,
@@ -502,7 +519,10 @@ enum item_t : uint16_t {
 	ITEM_GOLD_COIN = 2148,
 	ITEM_PLATINUM_COIN = 2152,
 	ITEM_CRYSTAL_COIN = 2160,
-	ITEM_STORE_COIN = 24774, // in-game store currency
+	ITEM_STORE_COIN = 24774,
+
+	ITEM_REWARD_CONTAINER = 21518,
+	ITEM_REWARD_CHEST = 21584,
 
 	ITEM_DEPOT = 2594,
 	ITEM_LOCKER1 = 2589,

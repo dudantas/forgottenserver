@@ -23,6 +23,7 @@
 #include "protocol.h"
 
 class NetworkMessage;
+class OutputMessage;
 
 class ProtocolOld final : public Protocol
 {
@@ -35,7 +36,7 @@ class ProtocolOld final : public Protocol
 			return "old login protocol";
 		}
 
-		explicit ProtocolOld(Connection_ptr connection) : Protocol(connection) {}
+		explicit ProtocolOld(Connection_ptr initConnection) : Protocol(initConnection) {}
 
 		void onRecvFirstMessage(NetworkMessage& msg) override;
 

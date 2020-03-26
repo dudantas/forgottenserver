@@ -26,7 +26,7 @@
 class Vocation
 {
 	public:
-		explicit Vocation(uint16_t id) : id(id) {}
+		explicit Vocation(uint16_t initId) : id(initId) {}
 
 		const std::string& getVocName() const {
 			return name;

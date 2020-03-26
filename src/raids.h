@@ -30,8 +30,8 @@ enum RaidState_t {
 };
 
 struct MonsterSpawn {
-	MonsterSpawn(std::string name, uint32_t minAmount, uint32_t maxAmount) :
-		name(std::move(name)), minAmount(minAmount), maxAmount(maxAmount) {}
+	MonsterSpawn(std::string initName, uint32_t initMinAmount, uint32_t initMaxAmount) :
+		name(std::move(initName)), minAmount(initMinAmount), maxAmount(initMaxAmount) {}
 
 	std::string name;
 	uint32_t minAmount;
@@ -105,8 +105,8 @@ class Raids
 class Raid
 {
 	public:
-		Raid(std::string name, uint32_t interval, uint32_t marginTime, bool repeat) :
-			name(std::move(name)), interval(interval), margin(marginTime), repeat(repeat) {}
+		Raid(std::string initName, uint32_t initInterval, uint32_t initMarginTime, bool initRepeat) :
+			name(std::move(initName)), interval(initInterval), margin(initMarginTime), repeat(initRepeat) {}
 		~Raid();
 
 		// non-copyable

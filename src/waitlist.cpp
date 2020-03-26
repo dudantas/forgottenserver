@@ -31,8 +31,8 @@ namespace {
 
 struct Wait
 {
-	constexpr Wait(std::size_t timeout, uint32_t playerGUID) :
-			timeout(timeout), playerGUID(playerGUID) {}
+	constexpr Wait(std::size_t initTimeout, uint32_t initPlayerGUID) :
+			timeout(initTimeout), playerGUID(initPlayerGUID) {}
 
 	std::size_t timeout;
 	uint32_t playerGUID;

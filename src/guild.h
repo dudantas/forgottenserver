@@ -27,14 +27,15 @@ struct GuildRank {
 	std::string name;
 	uint8_t level;
 
-	GuildRank(uint32_t id, std::string name, uint8_t level) :
-		id(id), name(std::move(name)), level(level) {}
+	GuildRank(uint32_t initId, std::string initName, uint8_t initLevel) :
+		id(initId), name(std::move(initName)), level(initLevel) {}
 };
 
+using GuildRank_ptr = std::shared_ptr<GuildRank>;
 class Guild
 {
 	public:
-		Guild(uint32_t id, std::string name) : name(std::move(name)), id(id) {}
+		Guild(uint32_t initId, std::string initName) : name(std::move(initName)), id(initId) {}
 
 		void addMember(Player* player);
 		void removeMember(Player* player);
@@ -55,24 +56,25 @@ class Guild
 			memberCount = count;
 		}
 
-		const std::vector<GuildRank>& getRanks() const {
+		const std::vector<GuildRank_ptr>& getRanks() const {
 			return ranks;
 		}
-		GuildRank* getRankById(uint32_t rankId);
-		const GuildRank* getRankByName(const std::string& name) const;
-		const GuildRank* getRankByLevel(uint8_t level) const;
-		void addRank(uint32_t rankId, const std::string& rankName, uint8_t level);
+
+		GuildRank_ptr getRankById(uint32_t id);
+		GuildRank_ptr getRankByName(const std::string& name) const;
+		GuildRank_ptr getRankByLevel(uint8_t level) const;
+		void addRank(uint32_t id, const std::string& name, uint8_t level);
 
 		const std::string& getMotd() const {
 			return motd;
 		}
-		void setMotd(const std::string& motd) {
-			this->motd = motd;
+		void setMotd(const std::string& newMotd) {
+			this->motd = newMotd;
 		}
 
 	private:
 		std::list<Player*> membersOnline;
-		std::vector<GuildRank> ranks;
+		std::vector<GuildRank_ptr> ranks;
 		std::string name;
 		std::string motd;
 		uint32_t id;

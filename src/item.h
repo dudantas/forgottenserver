@@ -102,9 +102,9 @@ enum AttrTypes_t {
 	ATTR_ARMOR = 31,
 	ATTR_HITCHANCE = 32,
 	ATTR_SHOOTRANGE = 33,
-	ATTR_CUSTOM_ATTRIBUTES = 34,
-	ATTR_DECAYTO = 35,
-	ATTR_WRAPID = 36
+	ATTR_SPECIAL = 34,
+	ATTR_OPENCONTAINER = 36,
+	ATTR_CUSTOM_ATTRIBUTES = 37
 };
 
 enum Attr_ReadValue {
@@ -142,7 +142,7 @@ class ItemAttributes
 			removeAttribute(ITEM_ATTRIBUTE_DATE);
 		}
 		time_t getDate() const {
-			return static_cast<time_t>(getIntAttr(ITEM_ATTRIBUTE_DATE));
+			return getIntAttr(ITEM_ATTRIBUTE_DATE);
 		}
 
 		void setWriter(const std::string& writer) {
@@ -360,7 +360,7 @@ class ItemAttributes
 			} value;
 			itemAttrTypes type;
 
-			explicit Attribute(itemAttrTypes type) : type(type) {
+			explicit Attribute(itemAttrTypes initType) : type(initType) {
 				memset(&value, 0, sizeof(value));
 			}
 			Attribute(const Attribute& i) {
@@ -497,23 +497,15 @@ class ItemAttributes
 			return false;
 		}
 
-		const static uint32_t intAttributeTypes = ITEM_ATTRIBUTE_ACTIONID | ITEM_ATTRIBUTE_UNIQUEID | ITEM_ATTRIBUTE_DATE
-			| ITEM_ATTRIBUTE_WEIGHT | ITEM_ATTRIBUTE_ATTACK | ITEM_ATTRIBUTE_DEFENSE | ITEM_ATTRIBUTE_EXTRADEFENSE
-			| ITEM_ATTRIBUTE_ARMOR | ITEM_ATTRIBUTE_HITCHANCE | ITEM_ATTRIBUTE_SHOOTRANGE | ITEM_ATTRIBUTE_OWNER
-			| ITEM_ATTRIBUTE_DURATION | ITEM_ATTRIBUTE_DECAYSTATE | ITEM_ATTRIBUTE_CORPSEOWNER | ITEM_ATTRIBUTE_CHARGES
-			| ITEM_ATTRIBUTE_FLUIDTYPE | ITEM_ATTRIBUTE_DOORID | ITEM_ATTRIBUTE_DECAYTO | ITEM_ATTRIBUTE_WRAPID;
-		const static uint32_t stringAttributeTypes = ITEM_ATTRIBUTE_DESCRIPTION | ITEM_ATTRIBUTE_TEXT | ITEM_ATTRIBUTE_WRITER
-			| ITEM_ATTRIBUTE_NAME | ITEM_ATTRIBUTE_ARTICLE | ITEM_ATTRIBUTE_PLURALNAME;
-
 	public:
 		static bool isIntAttrType(itemAttrTypes type) {
-			return (type & intAttributeTypes) == type;
+			return (type & 0x27FFE13) != 0;
 		}
 		static bool isStrAttrType(itemAttrTypes type) {
-			return (type & stringAttributeTypes) == type;
+			return (type & 0x8001EC) != 0;
 		}
 		inline static bool isCustomAttrType(itemAttrTypes type) {
-			return (type & ITEM_ATTRIBUTE_CUSTOM) == type;
+			return (type & 0x80000000) != 0;
 		}
 
 		const std::forward_list<Attribute>& getList() const {
@@ -776,16 +768,6 @@ class Item : virtual public Thing
 			return static_cast<ItemDecayState_t>(getIntAttr(ITEM_ATTRIBUTE_DECAYSTATE));
 		}
 
-		void setDecayTo(int32_t decayTo) {
-			setIntAttr(ITEM_ATTRIBUTE_DECAYTO, decayTo);
-		}
-		int32_t getDecayTo() const {
-			if (hasAttribute(ITEM_ATTRIBUTE_DECAYTO)) {
-				return getIntAttr(ITEM_ATTRIBUTE_DECAYTO);
-			}
-			return items[id].decayTo;
-		}
-
 		static std::string getDescription(const ItemType& it, int32_t lookDistance, const Item* item = nullptr, int32_t subType = -1, bool addArticle = true);
 		static std::string getNameDescription(const ItemType& it, const Item* item = nullptr, int32_t subType = -1, bool addArticle = true);
 		static std::string getWeightDescription(const ItemType& it, uint32_t weight, uint32_t count = 1);
@@ -825,9 +807,9 @@ class Item : virtual public Thing
 		Ammo_t getAmmoType() const {
 			return items[id].ammoType;
 		}
-		uint16_t getShootRange() const {
+		uint8_t getShootRange() const {
 			if (hasAttribute(ITEM_ATTRIBUTE_SHOOTRANGE)) {
-				return getIntAttr(ITEM_ATTRIBUTE_SHOOTRANGE);
+				return static_cast<uint8_t>(getIntAttr(ITEM_ATTRIBUTE_SHOOTRANGE));
 			}
 			return items[id].shootRange;
 		}
@@ -868,7 +850,7 @@ class Item : virtual public Thing
 		}
 		int8_t getHitChance() const {
 			if (hasAttribute(ITEM_ATTRIBUTE_HITCHANCE)) {
-				return getIntAttr(ITEM_ATTRIBUTE_HITCHANCE);
+				return static_cast<uint8_t>(getIntAttr(ITEM_ATTRIBUTE_HITCHANCE));
 			}
 			return items[id].hitChance;
 		}
@@ -905,8 +887,7 @@ class Item : virtual public Thing
 			return items[id].isHangable;
 		}
 		bool isRotatable() const {
-			const ItemType& it = items[id];
-			return it.rotatable && it.rotateTo;
+			return items[id].rotatable && items[id].rotateTo;
 		}
 		bool hasWalkStack() const {
 			return items[id].walkStack;
@@ -975,9 +956,6 @@ class Item : virtual public Thing
 
 		virtual void startDecaying();
 
-		bool isLoadedFromMap() const {
-			return loadedFromMap;
-		}
 		void setLoadedFromMap(bool value) {
 			loadedFromMap = value;
 		}

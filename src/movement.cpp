@@ -101,6 +101,12 @@ Event_ptr MoveEvents::getEvent(const std::string& nodeName)
 	return Event_ptr(new MoveEvent(&scriptInterface));
 }
 
+bool MoveEvents::isRegistered(uint32_t itemid)
+{
+	auto it = itemIdMap.find(itemid);
+	return it != itemIdMap.end();
+}
+
 bool MoveEvents::registerEvent(Event_ptr event, const pugi::xml_node& node)
 {
 	MoveEvent_ptr moveEvent{static_cast<MoveEvent*>(event.release())}; //event is guaranteed to be a MoveEvent
@@ -739,44 +745,31 @@ uint32_t MoveEvent::EquipItem(MoveEvent* moveEvent, Player* player, Item* item, 
 		player->addCondition(condition);
 	}
 
-	//skill modifiers
-	bool needUpdateSkills = false;
+	//skill/stats modifiers
+	bool needUpdate = false;
 
 	for (int32_t i = SKILL_FIRST; i <= SKILL_LAST; ++i) {
 		if (it.abilities->skills[i]) {
-			needUpdateSkills = true;
+			needUpdate = true;
 			player->setVarSkill(static_cast<skills_t>(i), it.abilities->skills[i]);
 		}
 	}
 
-	for (int32_t i = SPECIALSKILL_FIRST; i <= SPECIALSKILL_LAST; ++i) {
-		if (it.abilities->specialSkills[i]) {
-			needUpdateSkills = true;
-			player->setVarSpecialSkill(static_cast<SpecialSkills_t>(i), it.abilities->specialSkills[i]);
-		}
-	}
-
-	if (needUpdateSkills) {
-		player->sendSkills();
-	}
-
-	//stat modifiers
-	bool needUpdateStats = false;
-
 	for (int32_t s = STAT_FIRST; s <= STAT_LAST; ++s) {
 		if (it.abilities->stats[s]) {
-			needUpdateStats = true;
+			needUpdate = true;
 			player->setVarStats(static_cast<stats_t>(s), it.abilities->stats[s]);
 		}
 
 		if (it.abilities->statsPercent[s]) {
-			needUpdateStats = true;
+			needUpdate = true;
 			player->setVarStats(static_cast<stats_t>(s), static_cast<int32_t>(player->getDefaultStats(static_cast<stats_t>(s)) * ((it.abilities->statsPercent[s] - 100) / 100.f)));
 		}
 	}
 
-	if (needUpdateStats) {
+	if (needUpdate) {
 		player->sendStats();
+		player->sendSkills();
 	}
 
 	return 1;
@@ -821,44 +814,31 @@ uint32_t MoveEvent::DeEquipItem(MoveEvent*, Player* player, Item* item, slots_t 
 		player->removeCondition(CONDITION_REGENERATION, static_cast<ConditionId_t>(slot));
 	}
 
-	//skill modifiers
-	bool needUpdateSkills = false;
+	//skill/stats modifiers
+	bool needUpdate = false;
 
 	for (int32_t i = SKILL_FIRST; i <= SKILL_LAST; ++i) {
 		if (it.abilities->skills[i] != 0) {
-			needUpdateSkills = true;
+			needUpdate = true;
 			player->setVarSkill(static_cast<skills_t>(i), -it.abilities->skills[i]);
 		}
 	}
 
-	for (int32_t i = SPECIALSKILL_FIRST; i <= SPECIALSKILL_LAST; ++i) {
-		if (it.abilities->specialSkills[i] != 0) {
-			needUpdateSkills = true;
-			player->setVarSpecialSkill(static_cast<SpecialSkills_t>(i), -it.abilities->specialSkills[i]);
-		}
-	}
-
-	if (needUpdateSkills) {
-		player->sendSkills();
-	}
-
-	//stat modifiers
-	bool needUpdateStats = false;
-
 	for (int32_t s = STAT_FIRST; s <= STAT_LAST; ++s) {
 		if (it.abilities->stats[s]) {
-			needUpdateStats = true;
+			needUpdate = true;
 			player->setVarStats(static_cast<stats_t>(s), -it.abilities->stats[s]);
 		}
 
 		if (it.abilities->statsPercent[s]) {
-			needUpdateStats = true;
+			needUpdate = true;
 			player->setVarStats(static_cast<stats_t>(s), -static_cast<int32_t>(player->getDefaultStats(static_cast<stats_t>(s)) * ((it.abilities->statsPercent[s] - 100) / 100.f)));
 		}
 	}
 
-	if (needUpdateStats) {
+	if (needUpdate) {
 		player->sendStats();
+		player->sendSkills();
 	}
 
 	return 1;
@@ -935,21 +915,21 @@ bool MoveEvent::executeStep(Creature* creature, Item* item, const Position& pos)
 	return scriptInterface->callFunction(4);
 }
 
-uint32_t MoveEvent::fireEquip(Player* player, Item* item, slots_t slot, bool isCheck)
+uint32_t MoveEvent::fireEquip(Player* player, Item* item, slots_t toSlot, bool isCheck)
 {
 	if (scripted) {
-		if (!equipFunction || equipFunction(this, player, item, slot, isCheck) == 1) {
-			if (executeEquip(player, item, slot, isCheck)) {
+		if (!equipFunction || equipFunction(this, player, item, toSlot, isCheck) == 1) {
+			if (executeEquip(player, item, toSlot, isCheck)) {
 				return 1;
 			}
 		}
 		return 0;
 	} else {
-		return equipFunction(this, player, item, slot, isCheck);
+		return equipFunction(this, player, item, toSlot, isCheck);
 	}
 }
 
-bool MoveEvent::executeEquip(Player* player, Item* item, slots_t slot, bool isCheck)
+bool MoveEvent::executeEquip(Player* player, Item* item, slots_t onSlot, bool isCheck)
 {
 	//onEquip(player, item, slot, isCheck)
 	//onDeEquip(player, item, slot, isCheck)
@@ -967,22 +947,22 @@ bool MoveEvent::executeEquip(Player* player, Item* item, slots_t slot, bool isCh
 	LuaScriptInterface::pushUserdata<Player>(L, player);
 	LuaScriptInterface::setMetatable(L, -1, "Player");
 	LuaScriptInterface::pushThing(L, item);
-	lua_pushnumber(L, slot);
+	lua_pushnumber(L, onSlot);
 	LuaScriptInterface::pushBoolean(L, isCheck);
 
 	return scriptInterface->callFunction(4);
 }
 
-uint32_t MoveEvent::fireAddRemItem(Item* item, Item* tileItem, const Position& pos)
+uint32_t MoveEvent::fireAddRemItem(Item* item, Item* fromTile, const Position& pos)
 {
 	if (scripted) {
-		return executeAddRemItem(item, tileItem, pos);
+		return executeAddRemItem(item, fromTile, pos);
 	} else {
-		return moveFunction(item, tileItem, pos);
+		return moveFunction(item, fromTile, pos);
 	}
 }
 
-bool MoveEvent::executeAddRemItem(Item* item, Item* tileItem, const Position& pos)
+bool MoveEvent::executeAddRemItem(Item* item, Item* fromTile, const Position& pos)
 {
 	//onaddItem(moveitem, tileitem, pos)
 	//onRemoveItem(moveitem, tileitem, pos)
@@ -998,7 +978,7 @@ bool MoveEvent::executeAddRemItem(Item* item, Item* tileItem, const Position& po
 
 	scriptInterface->pushFunction(scriptId);
 	LuaScriptInterface::pushThing(L, item);
-	LuaScriptInterface::pushThing(L, tileItem);
+	LuaScriptInterface::pushThing(L, fromTile);
 	LuaScriptInterface::pushPosition(L, pos);
 
 	return scriptInterface->callFunction(3);

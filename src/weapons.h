@@ -199,12 +199,13 @@ class Weapon : public Event
 		std::map<uint16_t, bool> vocWeaponMap;
 
 	protected:
+		std::string getScriptEventName() const override;
+
+		bool executeUseWeapon(Player* player, const LuaVariant& var) const;
 		void internalUseWeapon(Player* player, Item* item, Creature* target, int32_t damageModifier) const;
 		void internalUseWeapon(Player* player, Item* item, Tile* tile) const;
 
-		uint16_t id = 0;
-
-	private:
+		void onUsedWeapon(Player* player, Item* item, Tile* destTile) const;
 		virtual bool getSkillType(const Player*, const Item*, skills_t&, uint32_t&) const {
 			return false;
 		}
@@ -219,17 +220,13 @@ class Weapon : public Event
 		uint32_t health = 0;
 		uint32_t healthPercent = 0;
 		uint32_t soul = 0;
+		uint16_t id = 0;
 		uint32_t wieldInfo = WIELDINFO_NONE;
 		uint8_t breakChance = 0;
 		bool enabled = true;
 		bool premium = false;
 		bool wieldUnproperly = false;
 		std::string vocationString = "";
-
-		std::string getScriptEventName() const override final;
-
-		bool executeUseWeapon(Player* player, const LuaVariant& var) const;
-		void onUsedWeapon(Player* player, Item* item, Tile* destTile) const;
 
 		static void decrementItemCount(Item* item);
 

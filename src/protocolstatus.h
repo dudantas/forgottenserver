@@ -34,7 +34,7 @@ class ProtocolStatus final : public Protocol
 			return "status protocol";
 		}
 
-		explicit ProtocolStatus(Connection_ptr connection) : Protocol(connection) {}
+		explicit ProtocolStatus(Connection_ptr conn) : Protocol(conn) {}
 
 		void onRecvFirstMessage(NetworkMessage& msg) override;
 

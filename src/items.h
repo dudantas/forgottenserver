@@ -74,7 +74,6 @@ struct Abilities {
 
 	//extra skill modifiers
 	int32_t skills[SKILL_LAST + 1] = { 0 };
-	int32_t specialSkills[SPECIALSKILL_LAST + 1] = { 0 };
 
 	int32_t speed = 0;
 
@@ -83,7 +82,7 @@ struct Abilities {
 
 	//damage abilities modifiers
 	int16_t absorbPercent[COMBAT_COUNT] = { 0 };
-	
+
 	//relfect abilities modifires
 	int16_t reflectPercent[COMBAT_COUNT] = { 0 };
 
@@ -250,7 +249,6 @@ class ItemType
 		int8_t hitChance = 0;
 
 		bool forceUse = false;
-		bool forceSerialize = false;
 		bool hasHeight = false;
 		bool walkStack = true;
 		bool blockSolid = false;
@@ -293,7 +291,7 @@ class Items
 		bool reload();
 		void clear();
 
-		bool loadFromOtb(const std::string& file);
+		FILELOADER_ERRORS loadFromOtb(const std::string& file);
 
 		const ItemType& operator[](size_t id) const {
 			return getItemType(id);

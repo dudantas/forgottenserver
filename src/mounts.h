@@ -22,8 +22,8 @@
 
 struct Mount
 {
-	Mount(uint8_t id, uint16_t clientId, std::string name, int32_t speed, bool premium) :
-		name(std::move(name)), speed(speed), clientId(clientId), id(id), premium(premium) {}
+	Mount(uint8_t initId, uint16_t initClientId, std::string initName, int32_t initSpeed, bool initPremium) :
+		name(std::move(initName)), speed(initSpeed), clientId(initClientId), id(initId), premium(initPremium) {}
 
 	std::string name;
 	int32_t speed;

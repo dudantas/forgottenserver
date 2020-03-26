@@ -211,17 +211,17 @@ std::string generateToken(const std::string& key, uint32_t ticks)
 
 	// hmac concat outer pad with message, conversion from hex to int needed
 	for (uint8_t i = 0; i < message.length(); i += 2) {
-		oKeyPad.push_back(static_cast<char>(std::strtoul(message.substr(i, 2).c_str(), nullptr, 16)));
+		oKeyPad.push_back(static_cast<char>(std::stol(message.substr(i, 2), nullptr, 16)));
 	}
 
 	// hmac second pass
 	message.assign(transformToSHA1(oKeyPad));
 
 	// calculate hmac offset
-	uint32_t offset = static_cast<uint32_t>(std::strtoul(message.substr(39, 1).c_str(), nullptr, 16) & 0xF);
+	uint32_t offset = static_cast<uint32_t>(std::stol(message.substr(39, 1), nullptr, 16) & 0xF);
 
 	// get truncated hash
-	uint32_t truncHash = static_cast<uint32_t>(std::strtoul(message.substr(2 * offset, 8).c_str(), nullptr, 16)) & 0x7FFFFFFF;
+	uint32_t truncHash = std::stol(message.substr(2 * offset, 8), nullptr, 16) & 0x7FFFFFFF;
 	message.assign(std::to_string(truncHash));
 
 	// return only last AUTHENTICATOR_DIGITS (default 6) digits, also asserts exactly 6 digits
@@ -757,6 +757,15 @@ std::string getCombatName(CombatType_t combatType)
 	return "unknown";
 }
 
+CombatType_t getCombatType(const std::string& combatname)
+{
+	auto it = std::find_if(combatTypeNames.begin(), combatTypeNames.end(), [combatname](std::pair<CombatType_t, std::string> const& pair) {
+		return pair.second == combatname;
+	});
+
+	return it != combatTypeNames.end() ? it->first : COMBAT_NONE;
+}
+
 Ammo_t getAmmoType(const std::string& strValue)
 {
 	auto ammoType = ammoTypeNames.find(strValue);
@@ -782,32 +791,6 @@ Skulls_t getSkullType(const std::string& strValue)
 		return skullType->second;
 	}
 	return SKULL_NONE;
-}
-
-std::string getSpecialSkillName(uint8_t skillid)
-{
-	switch (skillid) {
-		case SPECIALSKILL_CRITICALHITCHANCE:
-			return "critical hit chance";
-
-		case SPECIALSKILL_CRITICALHITAMOUNT:
-			return "critical extra damage";
-
-		case SPECIALSKILL_LIFELEECHCHANCE:
-			return "hitpoints leech chance";
-
-		case SPECIALSKILL_LIFELEECHAMOUNT:
-			return "hitpoints leech amount";
-
-		case SPECIALSKILL_MANALEECHCHANCE:
-			return "manapoints leech chance";
-
-		case SPECIALSKILL_MANALEECHAMOUNT:
-			return "mana points leech amount";
-
-		default:
-			return "unknown";
-	}
 }
 
 std::string getSkillName(uint8_t skillid)
@@ -1027,8 +1010,6 @@ itemAttrTypes stringToItemAttribute(const std::string& str)
 		return ITEM_ATTRIBUTE_FLUIDTYPE;
 	} else if (str == "doorid") {
 		return ITEM_ATTRIBUTE_DOORID;
-	} else if (str == "wrapid") {
-		return ITEM_ATTRIBUTE_WRAPID;
 	}
 	return ITEM_ATTRIBUTE_NONE;
 }
@@ -1050,7 +1031,7 @@ const char* getReturnMessage(ReturnValue value)
 {
 	switch (value) {
 		case RETURNVALUE_DESTINATIONOUTOFREACH:
-			return "Destination is out of range.";
+			return "Destination is out of reach.";
 
 		case RETURNVALUE_NOTMOVEABLE:
 			return "You cannot move this object.";
@@ -1074,7 +1055,7 @@ const char* getReturnMessage(ReturnValue value)
 			return "You may only use one weapon.";
 
 		case RETURNVALUE_TOOFARAWAY:
-			return "You are too far away.";
+			return "Too far away.";
 
 		case RETURNVALUE_FIRSTGODOWNSTAIRS:
 			return "First go downstairs.";
@@ -1138,7 +1119,7 @@ const char* getReturnMessage(ReturnValue value)
 			return "You are not allowed to shoot directly on players.";
 
 		case RETURNVALUE_NOTENOUGHLEVEL:
-			return "Your level is too low.";
+			return "You do not have enough level.";
 
 		case RETURNVALUE_NOTENOUGHMAGICLEVEL:
 			return "You do not have enough magic level.";
@@ -1152,11 +1133,8 @@ const char* getReturnMessage(ReturnValue value)
 		case RETURNVALUE_YOUAREEXHAUSTED:
 			return "You are exhausted.";
 
-		case RETURNVALUE_YOUCANNOTUSEOBJECTSTHATFAST:
-			return "You cannot use objects that fast.";
-
 		case RETURNVALUE_CANONLYUSETHISRUNEONCREATURES:
-			return "You can only use it on creatures.";
+			return "You can only use this rune on creatures.";
 
 		case RETURNVALUE_PLAYERISNOTREACHABLE:
 			return "Player is not reachable.";
@@ -1168,7 +1146,7 @@ const char* getReturnMessage(ReturnValue value)
 			return "This action is not permitted in a protection zone.";
 
 		case RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER:
-			return "You may not attack this person.";
+			return "You may not attack this player.";
 
 		case RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE:
 			return "You may not attack this creature.";
@@ -1189,10 +1167,10 @@ const char* getReturnMessage(ReturnValue value)
 			return "You need a premium account.";
 
 		case RETURNVALUE_YOUNEEDTOLEARNTHISSPELL:
-			return "You must learn this spell first.";
+			return "You need to learn this spell first.";
 
 		case RETURNVALUE_YOURVOCATIONCANNOTUSETHISSPELL:
-			return "You have the wrong vocation to cast this spell.";
+			return "Your vocation cannot use this spell.";
 
 		case RETURNVALUE_YOUNEEDAWEAPONTOUSETHISSPELL:
 			return "You need to equip a weapon to use this spell.";
@@ -1254,6 +1232,27 @@ const char* getReturnMessage(ReturnValue value)
 		case RETURNVALUE_YOUDONTHAVEREQUIREDPROFESSION:
 			return "You don't have the required profession.";
 
+		case RETURNVALUE_NOTENOUGHFISTLEVEL:
+			return "You do not have enough fist level";
+
+		case RETURNVALUE_NOTENOUGHCLUBLEVEL:
+			return "You do not have enough club level";
+
+		case RETURNVALUE_NOTENOUGHSWORDLEVEL:
+			return "You do not have enough sword level";
+
+		case RETURNVALUE_NOTENOUGHAXELEVEL:
+			return "You do not have enough axe level";
+
+		case RETURNVALUE_NOTENOUGHDISTANCELEVEL:
+			return "You do not have enough distance level";
+
+		case RETURNVALUE_NOTENOUGHSHIELDLEVEL:
+			return "You do not have enough shielding level";
+
+		case RETURNVALUE_NOTENOUGHFISHLEVEL:
+			return "You do not have enough fishing level";
+
 		default: // RETURNVALUE_NOTPOSSIBLE, etc
 			return "Sorry, not possible.";
 	}
@@ -1278,4 +1277,56 @@ SpellGroup_t stringToSpellGroup(std::string value)
 	}
 
 	return SPELLGROUP_NONE;
+}
+
+/**
+ * @authors jlcvp, acmh
+ * @details
+ * capitalize the first letter of every word in source
+ * @param source
+ */
+void capitalizeWords(std::string& source)
+{
+	toLowerCaseString(source);
+	uint8_t size = (uint8_t) source.size();
+	for(uint8_t i=0; i< size; i++) {
+		if(i==0) {
+			source[i] = (char)toupper(source[i]);
+		} else if(source[i-1] == ' ' || source[i-1] == '\'') {
+			source[i] = (char)toupper(source[i]);
+		}
+	}
+}
+
+NameEval_t validateName(const std::string &name)
+{
+
+	StringVector prohibitedWords = {"owner", "gamemaster", "hoster", "admin", "staff", "tibia", "account", "god", "anal", "ass", "fuck", "sex", "hitler", "pussy", "dick", "rape", "cm", "gm", "tutor", "counsellor", "god"};
+	StringVector toks;
+	std::regex regexValidChars("^[a-zA-Z' ]+$");
+
+	boost::split(toks, name, boost::is_any_of(" '"));
+	if(name.length()<3 || name.length()>14) {
+		return INVALID_LENGTH;
+	}
+
+	if(!std::regex_match(name, regexValidChars)) { //invalid chars in name
+		return INVALID_CHARACTER;
+	}
+
+	for(std::string str : toks) {
+		if(str.length()<2)
+			return INVALID_TOKEN_LENGTH;
+		else if(std::find(prohibitedWords.begin(), prohibitedWords.end(),str) != prohibitedWords.end()) { //searching for prohibited words
+			return INVALID_FORBIDDEN;
+		}
+	}
+
+	return VALID;
+}
+bool isCaskItem(uint16_t itemId)
+{
+	return (itemId >= ITEM_HEALTH_CASK_START && itemId <= ITEM_HEALTH_CASK_END) || 
+		(itemId >= ITEM_MANA_CASK_START && itemId <= ITEM_MANA_CASK_END) || 
+		(itemId >= ITEM_SPIRIT_CASK_START && itemId <= ITEM_SPIRIT_CASK_END);
 }

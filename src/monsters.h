@@ -35,6 +35,15 @@ struct LootBlock {
 	int32_t subType;
 	int32_t actionId;
 	std::string text;
+	std::string name;
+	std::string article;
+	int32_t attack;
+	int32_t defense;
+	int32_t extraDefense;
+	int32_t armor;
+	int32_t shootRange;
+	int32_t hitChance;
+	bool unique;
 
 	std::vector<LootBlock> childLoot;
 	LootBlock() {
@@ -44,6 +53,13 @@ struct LootBlock {
 
 		subType = -1;
 		actionId = -1;
+		attack = -1;
+		defense = -1;
+		extraDefense = -1;
+		armor = -1;
+		shootRange = -1;
+		hitChance = -1;
+		unique = false;
 	}
 };
 
@@ -155,6 +171,9 @@ class MonsterType
 		bool isAttackable = true;
 		bool isHostile = true;
 		bool hiddenHealth = false;
+		bool isBlockable = false;
+		bool isUniqueSummon = false;
+		bool isPassive = false;
 		bool canWalkOnEnergy = true;
 		bool canWalkOnFire = true;
 		bool canWalkOnPoison = true;
@@ -245,7 +264,7 @@ class Monsters
 
 	private:
 		ConditionDamage* getDamageCondition(ConditionType_t conditionType,
-		                                    int32_t maxDamage, int32_t minDamage, int32_t startDamage, uint32_t tickInterval);
+											int32_t maxDamage, int32_t minDamage, int32_t startDamage, uint32_t tickInterval);
 		bool deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, const std::string& description = "");
 
 		MonsterType* loadMonster(const std::string& file, const std::string& monsterName, bool reloading = false);

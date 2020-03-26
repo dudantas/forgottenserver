@@ -90,8 +90,8 @@ enum itemAttrTypes : uint32_t {
 	ITEM_ATTRIBUTE_FLUIDTYPE = 1 << 21,
 	ITEM_ATTRIBUTE_DOORID = 1 << 22,
 	ITEM_ATTRIBUTE_DECAYTO = 1 << 23,
-	ITEM_ATTRIBUTE_WRAPID = 1 << 24,
 
+	ITEM_ATTRIBUTE_OPENCONTAINER = 1 << 25,
 	ITEM_ATTRIBUTE_CUSTOM = 1U << 31
 };
 
@@ -131,6 +131,7 @@ enum CreatureType_t : uint8_t {
 	CREATURETYPE_PLAYER = 0,
 	CREATURETYPE_MONSTER = 1,
 	CREATURETYPE_NPC = 2,
+	CREATURETYPE_SUMMONPLAYER = 3,
 	CREATURETYPE_SUMMON_OWN = 3,
 	CREATURETYPE_SUMMON_OTHERS = 4,
 };
@@ -267,12 +268,7 @@ enum ConditionParam_t {
 	CONDITION_PARAM_SUBID = 45,
 	CONDITION_PARAM_FIELD = 46,
 	CONDITION_PARAM_DISABLE_DEFENSE = 47,
-	CONDITION_PARAM_SPECIALSKILL_CRITICALHITCHANCE = 48,
-	CONDITION_PARAM_SPECIALSKILL_CRITICALHITAMOUNT = 49,
-	CONDITION_PARAM_SPECIALSKILL_LIFELEECHCHANCE = 50,
-	CONDITION_PARAM_SPECIALSKILL_LIFELEECHAMOUNT = 51,
-	CONDITION_PARAM_SPECIALSKILL_MANALEECHCHANCE = 52,
-	CONDITION_PARAM_SPECIALSKILL_MANALEECHAMOUNT = 53,
+	CONDITION_PARAM_STAT_CAPACITYPERCENT = 48
 };
 
 enum BlockType_t : uint8_t {
@@ -290,12 +286,11 @@ enum skills_t : uint8_t {
 	SKILL_DISTANCE = 4,
 	SKILL_SHIELD = 5,
 	SKILL_FISHING = 6,
-
 	SKILL_MAGLEVEL = 7,
 	SKILL_LEVEL = 8,
 
 	SKILL_FIRST = SKILL_FIST,
-	SKILL_LAST = SKILL_FISHING
+	SKILL_LAST = SKILL_LEVEL
 };
 
 enum stats_t {
@@ -303,21 +298,10 @@ enum stats_t {
 	STAT_MAXMANAPOINTS,
 	STAT_SOULPOINTS, // unused
 	STAT_MAGICPOINTS,
+	STAT_CAPACITY,
 
 	STAT_FIRST = STAT_MAXHITPOINTS,
-	STAT_LAST = STAT_MAGICPOINTS
-};
-
-enum SpecialSkills_t {
-	SPECIALSKILL_CRITICALHITCHANCE,
-	SPECIALSKILL_CRITICALHITAMOUNT,
-	SPECIALSKILL_LIFELEECHCHANCE,
-	SPECIALSKILL_LIFELEECHAMOUNT,
-	SPECIALSKILL_MANALEECHCHANCE,
-	SPECIALSKILL_MANALEECHAMOUNT,
-
-	SPECIALSKILL_FIRST = SPECIALSKILL_CRITICALHITCHANCE,
-	SPECIALSKILL_LAST = SPECIALSKILL_MANALEECHAMOUNT
+	STAT_LAST = STAT_CAPACITY
 };
 
 enum formulaType_t {
@@ -342,7 +326,7 @@ enum ConditionType_t {
 	CONDITION_MANASHIELD = 1 << 9,
 	CONDITION_INFIGHT = 1 << 10,
 	CONDITION_DRUNK = 1 << 11,
-	CONDITION_EXHAUST_WEAPON = 1 << 12, // unused
+	CONDITION_EXHAUST = 1 << 12, // unused
 	CONDITION_REGENERATION = 1 << 13,
 	CONDITION_SOUL = 1 << 14,
 	CONDITION_DROWN = 1 << 15,
@@ -455,6 +439,13 @@ enum ReturnValue {
 	RETURNVALUE_ANOTHERRAIDISALREADYEXECUTING,
 	RETURNVALUE_TRADEPLAYERFARAWAY,
 	RETURNVALUE_YOUDONTOWNTHISHOUSE,
+	RETURNVALUE_NOTENOUGHFISTLEVEL,
+	RETURNVALUE_NOTENOUGHCLUBLEVEL,
+	RETURNVALUE_NOTENOUGHSWORDLEVEL,
+	RETURNVALUE_NOTENOUGHAXELEVEL,
+	RETURNVALUE_NOTENOUGHDISTANCELEVEL,
+	RETURNVALUE_NOTENOUGHSHIELDLEVEL,
+	RETURNVALUE_NOTENOUGHFISHLEVEL,
 	RETURNVALUE_TRADEPLAYERALREADYOWNSAHOUSE,
 	RETURNVALUE_TRADEPLAYERHIGHESTBIDDER,
 	RETURNVALUE_YOUCANNOTTRADETHISHOUSE,
@@ -509,7 +500,7 @@ struct LightInfo {
 	uint8_t level = 0;
 	uint8_t color = 0;
 	constexpr LightInfo() = default;
-	constexpr LightInfo(uint8_t level, uint8_t color) : level(level), color(color) {}
+	constexpr LightInfo(uint8_t newLevel, uint8_t newColor) : level(newLevel), color(newColor) {}
 };
 
 struct ShopInfo {
@@ -526,8 +517,8 @@ struct ShopInfo {
 		sellPrice = 0;
 	}
 
-	ShopInfo(uint16_t itemId, int32_t subType = 0, uint32_t buyPrice = 0, uint32_t sellPrice = 0, std::string realName = "")
-		: itemId(itemId), subType(subType), buyPrice(buyPrice), sellPrice(sellPrice), realName(std::move(realName)) {}
+	ShopInfo(uint16_t newItemId, int32_t newSubType = 0, uint32_t newBuyPrice = 0, uint32_t newSellPrice = 0, std::string newRealName = "")
+		: itemId(newItemId), subType(newSubType), buyPrice(newBuyPrice), sellPrice(newSellPrice), realName(std::move(newRealName)) {}
 };
 
 struct MarketOffer {
@@ -587,8 +578,8 @@ struct ModalWindow
 	uint8_t defaultEnterButton, defaultEscapeButton;
 	bool priority;
 
-	ModalWindow(uint32_t id, std::string title, std::string message)
-		: title(std::move(title)), message(std::move(message)), id(id), defaultEnterButton(0xFF), defaultEscapeButton(0xFF), priority(false) {}
+	ModalWindow(uint32_t newId, std::string newTitle, std::string newMessage)
+		: title(std::move(newTitle)), message(std::move(newMessage)), id(newId), defaultEnterButton(0xFF), defaultEscapeButton(0xFF), priority(false) {}
 };
 
 enum CombatOrigin
@@ -609,12 +600,15 @@ struct CombatDamage
 
 	CombatOrigin origin;
 	bool critical;
+	int affected;
+
 	CombatDamage()
 	{
 		origin = ORIGIN_NONE;
 		primary.type = secondary.type = COMBAT_NONE;
 		primary.value = secondary.value = 0;
 		critical = false;
+		affected = 1;
 	}
 };
 

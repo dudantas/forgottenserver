@@ -22,6 +22,7 @@
 #include "protocollogin.h"
 
 #include "outputmessage.h"
+#include "rsa.h"
 #include "tasks.h"
 
 #include "configmanager.h"
@@ -43,7 +44,7 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
 	disconnect();
 }
 
-void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, const std::string& token, uint16_t version)
+void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, uint16_t version)
 {
 	//dispatcher thread
 	Account account;
@@ -52,24 +53,11 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 		return;
 	}
 
-	uint32_t ticks = time(nullptr) / AUTHENTICATOR_PERIOD;
-
 	auto output = OutputMessagePool::getOutputMessage();
-	if (!account.key.empty()) {
-		if (token.empty() || !(token == generateToken(account.key, ticks) || token == generateToken(account.key, ticks - 1) || token == generateToken(account.key, ticks + 1))) {
-			output->addByte(0x0D);
-			output->addByte(0);
-			send(output);
-			disconnect();
-			return;
-		}
-		output->addByte(0x0C);
-		output->addByte(0);
-	}
-
 	//Update premium days
 	Game::updatePremium(account);
 
+	//
 	const std::string& motd = g_config.getString(ConfigManager::MOTD);
 	if (!motd.empty()) {
 		//Add MOTD
@@ -82,41 +70,26 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 
 	//Add session key
 	output->addByte(0x28);
-	output->addString(accountName + "\n" + password + "\n" + token + "\n" + std::to_string(ticks));
+	output->addString(accountName + "\n" + password);
 
 	//Add char list
 	output->addByte(0x64);
 
+	output->addByte(1); // number of worlds
+
+	output->addByte(0); // world id
+	output->addString(g_config.getString(ConfigManager::SERVER_NAME));
+	output->addString(g_config.getString(ConfigManager::IP));
+
+	output->add<uint16_t>(g_config.getShortNumber(ConfigManager::GAME_PORT));
+
+	output->addByte(0);
+	//
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.characters.size());
-
-	if (g_config.getBoolean(ConfigManager::ONLINE_OFFLINE_CHARLIST)) {
-		output->addByte(2); // number of worlds
-
-		for (uint8_t i = 0; i < 2; i++) {
-			output->addByte(i); // world id
-			output->addString(i == 0 ? "Offline" : "Online");
-			output->addString(g_config.getString(ConfigManager::IP));
-			output->add<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT));
-			output->addByte(0);
-		}
-	} else {
-		output->addByte(1); // number of worlds
-		output->addByte(0); // world id
-		output->addString(g_config.getString(ConfigManager::SERVER_NAME));
-		output->addString(g_config.getString(ConfigManager::IP));
-		output->add<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT));
-		output->addByte(0);
-	}
-
 	output->addByte(size);
 	for (uint8_t i = 0; i < size; i++) {
-		const std::string& character = account.characters[i];
-		if (g_config.getBoolean(ConfigManager::ONLINE_OFFLINE_CHARLIST)) {
-			output->addByte(g_game.getPlayerByName(character) ? 1 : 0);
-		} else {
-			output->addByte(0);
-		}
-		output->addString(character);
+		output->addByte(0);
+		output->addString(account.characters[i]);
 	}
 
 	//Add premium days
@@ -125,7 +98,7 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 		output->addByte(1);
 		output->add<uint32_t>(0);
 	} else {
-		output->addByte(account.premiumDays > 0 ? 1 : 0);
+		output->addByte(0);
 		output->add<uint32_t>(time(nullptr) + (account.premiumDays * 86400));
 	}
 
@@ -142,17 +115,14 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	msg.skipBytes(2); // client OS
+	// OperatingSystem_t operatingSystem = static_cast<OperatingSystem_t>(msg.get<uint16_t>());
 
 	uint16_t version = msg.get<uint16_t>();
 	if (version >= 1111) {
 		enableCompact();
 	}
-	
-	if (version >= 971) {
-		msg.skipBytes(17);
-	} else {
-		msg.skipBytes(12);
-	}
+
+	msg.skipBytes(17);
 	/*
 	 * Skipped bytes:
 	 * 4 bytes: protocolVersion
@@ -168,17 +138,18 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	if (!Protocol::RSA_decrypt(msg)) {
+		std::cout << "[ProtocolLogin::onRecvFirstMessage] RSA Decrypt Failed" << std::endl;
 		disconnect();
 		return;
 	}
 
-	xtea::key key;
-	key[0] = msg.get<uint32_t>();
-	key[1] = msg.get<uint32_t>();
-	key[2] = msg.get<uint32_t>();
-	key[3] = msg.get<uint32_t>();
+	uint32_t msgKey[4];
+	msgKey[0] = msg.get<uint32_t>();
+	msgKey[1] = msg.get<uint32_t>();
+	msgKey[2] = msg.get<uint32_t>();
+	msgKey[3] = msg.get<uint32_t>();
 	enableXTEAEncryption();
-	setXTEAKey(std::move(key));
+	setXTEAKey(msgKey);
 
 	if (version < g_config.getNumber(ConfigManager::VERSION_MIN) || version > g_config.getNumber(ConfigManager::VERSION_MAX)) {
 		std::ostringstream ss;
@@ -198,12 +169,12 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	BanInfo banInfo;
-	auto connection = getConnection();
-	if (!connection) {
+	auto curConnection = getConnection();
+	if (!curConnection) {
 		return;
 	}
 
-	if (IOBan::isIpBanned(connection->getIP(), banInfo)) {
+	if (IOBan::isIpBanned(curConnection->getIP(), banInfo)) {
 		if (banInfo.reason.empty()) {
 			banInfo.reason = "(none)";
 		}
@@ -226,15 +197,6 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 		return;
 	}
 
-	// read authenticator token and stay logged in flag from last 128 bytes
-	msg.skipBytes((msg.getLength() - 128) - msg.getBufferPosition());
-	if (!Protocol::RSA_decrypt(msg)) {
-		disconnectClient("Invalid authentification token.", version);
-		return;
-	}
-
-	std::string authToken = msg.getString();
-
 	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
-	g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getCharacterList, thisPtr, accountName, password, authToken, version)));
+	g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getCharacterList, thisPtr, accountName, password, version)));
 }

@@ -23,8 +23,8 @@
 #include "configmanager.h"
 #include "game.h"
 #include "pugicast.h"
-#include "weapons.h"
 #include "events.h"
+#include "weapons.h"
 
 extern Game g_game;
 extern Vocations g_vocations;
@@ -190,10 +190,6 @@ bool Weapon::configureEvent(const pugi::xml_node& node)
 		premium = attr.as_bool();
 	}
 
-	if ((attr = node.attribute("breakchance"))) {
-		breakChance = std::min<uint8_t>(100, pugi::cast<uint16_t>(attr.value()));
-	}
-
 	if ((attr = node.attribute("action"))) {
 		action = getWeaponAction(asLowerCaseString(attr.as_string()));
 		if (action == WEAPONACTION_NONE) {
@@ -229,41 +225,41 @@ bool Weapon::configureEvent(const pugi::xml_node& node)
 		}
 	}
 
-	std::string vocationString;
+	std::string vocationName;
 	for (const std::string& str : vocStringList) {
-		if (!vocationString.empty()) {
+		if (!vocationName.empty()) {
 			if (str != vocStringList.back()) {
-				vocationString.push_back(',');
-				vocationString.push_back(' ');
+				vocationName.push_back(',');
+				vocationName.push_back(' ');
 			} else {
-				vocationString += " and ";
+				vocationName += " and ";
 			}
 		}
 
-		vocationString += str;
-		vocationString.push_back('s');
+		vocationName += str;
+		vocationName.push_back('s');
 	}
 
-	uint32_t wieldInfo = 0;
+	uint32_t wieldInformation = 0;
 	if (getReqLevel() > 0) {
-		wieldInfo |= WIELDINFO_LEVEL;
+		wieldInformation |= WIELDINFO_LEVEL;
 	}
 
 	if (getReqMagLv() > 0) {
-		wieldInfo |= WIELDINFO_MAGLV;
+		wieldInformation |= WIELDINFO_MAGLV;
 	}
 
 	if (!vocationString.empty()) {
-		wieldInfo |= WIELDINFO_VOCREQ;
+		wieldInformation |= WIELDINFO_VOCREQ;
 	}
 
 	if (isPremium()) {
-		wieldInfo |= WIELDINFO_PREMIUM;
+		wieldInformation |= WIELDINFO_PREMIUM;
 	}
 
-	if (wieldInfo != 0) {
+	if (wieldInformation != 0) {
 		ItemType& it = Item::items.getItemType(id);
-		it.wieldInfo = wieldInfo;
+		it.wieldInfo = wieldInformation;
 		it.vocationString = vocationString;
 		it.minReqLevel = getReqLevel();
 		it.minReqMagicLevel = getReqMagLv();
@@ -386,8 +382,8 @@ void Weapon::internalUseWeapon(Player* player, Item* item, Creature* target, int
 		executeUseWeapon(player, var);
 	} else {
 		CombatDamage damage;
-		WeaponType_t weaponType = item->getWeaponType();
-		if (weaponType == WEAPON_AMMO || weaponType == WEAPON_DISTANCE) {
+		WeaponType_t localWeaponType = item->getWeaponType();
+		if (localWeaponType == WEAPON_AMMO || localWeaponType == WEAPON_DISTANCE) {
 			damage.origin = ORIGIN_RANGED;
 		} else {
 			damage.origin = ORIGIN_MELEE;
@@ -455,14 +451,6 @@ void Weapon::onUsedWeapon(Player* player, Item* item, Tile* destTile) const
 				player->updateSupplyTracker(item);
 			}
 			break;
-
-		case WEAPONACTION_REMOVECHARGE: {
-			uint16_t charges = item->getCharges();
-			if (charges != 0) {
-				g_game.transformItem(item, item->getID(), charges - 1);
-			}
-			break;
-		}
 
 		case WEAPONACTION_MOVE:
 			g_game.internalMoveItem(item->getParent(), destTile, INDEX_WHEREEVER, item, 1, nullptr, FLAG_NOLIMIT);
@@ -572,8 +560,8 @@ bool WeaponMelee::getSkillType(const Player* player, const Item* item,
 		skillpoint = 0;
 	}
 
-	WeaponType_t weaponType = item->getWeaponType();
-	switch (weaponType) {
+	WeaponType_t localWeaponType = item->getWeaponType();
+	switch (localWeaponType) {
 		case WEAPON_SWORD: {
 			skill = SKILL_SWORD;
 			return true;
@@ -910,26 +898,23 @@ bool WeaponWand::configureEvent(const pugi::xml_node& node)
 		maxChange = pugi::cast<int32_t>(attr.value());
 	}
 
-	attr = node.attribute("type");
-	if (!attr) {
-		return true;
-	}
-
-	std::string tmpStrValue = asLowerCaseString(attr.as_string());
-	if (tmpStrValue == "earth") {
-		params.combatType = COMBAT_EARTHDAMAGE;
-	} else if (tmpStrValue == "ice") {
-		params.combatType = COMBAT_ICEDAMAGE;
-	} else if (tmpStrValue == "energy") {
-		params.combatType = COMBAT_ENERGYDAMAGE;
-	} else if (tmpStrValue == "fire") {
-		params.combatType = COMBAT_FIREDAMAGE;
-	} else if (tmpStrValue == "death") {
-		params.combatType = COMBAT_DEATHDAMAGE;
-	} else if (tmpStrValue == "holy") {
-		params.combatType = COMBAT_HOLYDAMAGE;
-	} else {
-		std::cout << "[Warning - WeaponWand::configureEvent] Type \"" << attr.as_string() << "\" does not exist." << std::endl;
+	if ((attr = node.attribute("type"))) {
+		std::string tmpStrValue = asLowerCaseString(attr.as_string());
+		if (tmpStrValue == "earth") {
+			params.combatType = COMBAT_EARTHDAMAGE;
+		} else if (tmpStrValue == "ice") {
+			params.combatType = COMBAT_ICEDAMAGE;
+		} else if (tmpStrValue == "energy") {
+			params.combatType = COMBAT_ENERGYDAMAGE;
+		} else if (tmpStrValue == "fire") {
+			params.combatType = COMBAT_FIREDAMAGE;
+		} else if (tmpStrValue == "death") {
+			params.combatType = COMBAT_DEATHDAMAGE;
+		} else if (tmpStrValue == "holy") {
+			params.combatType = COMBAT_HOLYDAMAGE;
+		} else {
+			std::cout << "[Warning - WeaponWand::configureEvent] Type \"" << attr.as_string() << "\" does not exist." << std::endl;
+		}
 	}
 	return true;
 }

@@ -61,13 +61,13 @@ void ProtocolOld::onRecvFirstMessage(NetworkMessage& msg)
 		return;
 	}
 
-	xtea::key key;
-	key[0] = msg.get<uint32_t>();
-	key[1] = msg.get<uint32_t>();
-	key[2] = msg.get<uint32_t>();
-	key[3] = msg.get<uint32_t>();
+	uint32_t msgKey[4];
+	msgKey[0] = msg.get<uint32_t>();
+	msgKey[1] = msg.get<uint32_t>();
+	msgKey[2] = msg.get<uint32_t>();
+	msgKey[3] = msg.get<uint32_t>();
 	enableXTEAEncryption();
-	setXTEAKey(std::move(key));
+	setXTEAKey(msgKey);
 
 	if (version <= 822) {
 		disableChecksum();

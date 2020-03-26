@@ -58,9 +58,9 @@ void startupErrorMessage(const std::string& errorStr)
 	g_loaderSignal.notify_all();
 }
 
-void mainLoader(int argc, char* argv[], ServiceManager* services);
+void mainLoader(int argc, char* argv[], ServiceManager* servicer);
 
-[[noreturn]] void badAllocationHandler()
+void badAllocationHandler()
 {
 	// Use functions that only use stack allocation
 	puts("Allocation failed, server out of memory.\nDecrease the size of your map or compile in 64 bits mode.\n");
@@ -70,6 +70,10 @@ void mainLoader(int argc, char* argv[], ServiceManager* services);
 
 int main(int argc, char* argv[])
 {
+#ifdef DEBUG_LOG
+	spdlog::set_pattern("[%Y-%d-%m %H:%M:%S.%e] [file %@] [func %!] [thread %t] [%l] %v ");
+	SPDLOG_DEBUG("[OTSERV] SPDLOG LOG DEBUG ENABLED");
+#endif
 	// Setup bad allocation handler
 	std::set_new_handler(badAllocationHandler);
 
@@ -107,8 +111,8 @@ void mainLoader(int, char*[], ServiceManager* services)
 #ifdef _WIN32
 	SetConsoleTitle(STATUS_SERVER_NAME);
 #endif
-	std::cout << STATUS_SERVER_NAME << " - Version " << STATUS_SERVER_VERSION << std::endl;
-	std::cout << "Compiled with " << BOOST_COMPILER << std::endl;
+	std::cout << "The " << STATUS_SERVER_NAME << " - Version: (" << STATUS_SERVER_VERSION << ")" << std::endl;
+	std::cout << "Compiled with: " << BOOST_COMPILER << std::endl;
 	std::cout << "Compiled on " << __DATE__ << ' ' << __TIME__ << " for platform ";
 
 #if defined(__amd64__) || defined(_M_X64)
@@ -198,7 +202,7 @@ void mainLoader(int, char*[], ServiceManager* services)
 
 	// load item data
 	std::cout << ">> Loading items" << std::endl;
-	if (!Item::items.loadFromOtb("data/items/items.otb")) {
+	if (Item::items.loadFromOtb("data/items/items.otb") != ERROR_NONE) {
 		startupErrorMessage("Unable to load items (OTB)!");
 		return;
 	}

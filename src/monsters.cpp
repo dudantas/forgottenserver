@@ -96,7 +96,7 @@ bool Monsters::reload()
 }
 
 ConditionDamage* Monsters::getDamageCondition(ConditionType_t conditionType,
-        int32_t maxDamage, int32_t minDamage, int32_t startDamage, uint32_t tickInterval)
+		int32_t maxDamage, int32_t minDamage, int32_t startDamage, uint32_t tickInterval)
 {
 	ConditionDamage* condition = static_cast<ConditionDamage*>(Condition::createCondition(CONDITIONID_COMBAT, conditionType, 0, 0));
 	condition->setParam(CONDITION_PARAM_TICKINTERVAL, tickInterval);
@@ -248,7 +248,7 @@ bool Monsters::deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, co
 
 				minDamage = pugi::cast<int32_t>(attr.value());
 				maxDamage = minDamage;
-				tickInterval = 4000;
+				tickInterval = 5000;
 			} else if ((attr = node.attribute("energy"))) {
 				conditionType = CONDITION_ENERGY;
 
@@ -281,7 +281,7 @@ bool Monsters::deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, co
 				tickInterval = 4000;
 			} else if ((attr = node.attribute("bleed")) || (attr = node.attribute("physical"))) {
 				conditionType = CONDITION_BLEEDING;
-				tickInterval = 4000;
+				tickInterval = 5000;
 			}
 
 			if ((attr = node.attribute("tick"))) {
@@ -405,12 +405,12 @@ bool Monsters::deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, co
 		} else if (tmpName == "energyfield") {
 			combat->setParam(COMBAT_PARAM_CREATEITEM, ITEM_ENERGYFIELD_PVP);
 		} else if (tmpName == "firecondition" || tmpName == "energycondition" ||
-		           tmpName == "earthcondition" || tmpName == "poisoncondition" ||
-		           tmpName == "icecondition" || tmpName == "freezecondition" ||
-		           tmpName == "deathcondition" || tmpName == "cursecondition" ||
-		           tmpName == "holycondition" || tmpName == "dazzlecondition" ||
-		           tmpName == "drowncondition" || tmpName == "bleedcondition" ||
-		           tmpName == "physicalcondition") {
+				   tmpName == "earthcondition" || tmpName == "poisoncondition" ||
+				   tmpName == "icecondition" || tmpName == "freezecondition" ||
+				   tmpName == "deathcondition" || tmpName == "cursecondition" ||
+				   tmpName == "holycondition" || tmpName == "dazzlecondition" ||
+				   tmpName == "drowncondition" || tmpName == "bleedcondition" ||
+				   tmpName == "physicalcondition") {
 			ConditionType_t conditionType = CONDITION_NONE;
 			uint32_t tickInterval = 2000;
 
@@ -419,7 +419,7 @@ bool Monsters::deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, co
 				tickInterval = 10000;
 			} else if (tmpName == "poisoncondition" || tmpName == "earthcondition") {
 				conditionType = CONDITION_POISON;
-				tickInterval = 4000;
+				tickInterval = 5000;
 			} else if (tmpName == "energycondition") {
 				conditionType = CONDITION_ENERGY;
 				tickInterval = 10000;
@@ -437,7 +437,7 @@ bool Monsters::deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, co
 				tickInterval = 10000;
 			} else if (tmpName == "physicalcondition" || tmpName == "bleedcondition") {
 				conditionType = CONDITION_BLEEDING;
-				tickInterval = 4000;
+				tickInterval = 5000;
 			}
 
 			if ((attr = node.attribute("tick"))) {
@@ -861,6 +861,8 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 				mType->info.isAttackable = attr.as_bool();
 			} else if (strcasecmp(attrName, "hostile") == 0) {
 				mType->info.isHostile = attr.as_bool();
+			} else if (strcasecmp(attrName, "summon") == 0) {
+				mType->info.isUniqueSummon = attr.as_bool();
 			} else if (strcasecmp(attrName, "illusionable") == 0) {
 				mType->info.isIllusionable = attr.as_bool();
 			} else if (strcasecmp(attrName, "convinceable") == 0) {
@@ -889,6 +891,8 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 				mType->info.runAwayHealth = pugi::cast<int32_t>(attr.value());
 			} else if (strcasecmp(attrName, "hidehealth") == 0) {
 				mType->info.hiddenHealth = attr.as_bool();
+			} else if (strcasecmp(attrName, "isblockable") == 0) {
+				mType->info.isBlockable = attr.as_bool();
 			} else if (strcasecmp(attrName, "canwalkonenergy") == 0) {
 				mType->info.canWalkOnEnergy = attr.as_bool();
 			} else if (strcasecmp(attrName, "canwalkonfire") == 0) {
@@ -1240,6 +1244,7 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 	return mType;
 }
 
+
 bool MonsterType::loadCallback(LuaScriptInterface* scriptInterface)
 {
 	int32_t id = scriptInterface->getEvent();
@@ -1324,6 +1329,42 @@ bool Monsters::loadLootItem(const pugi::xml_node& node, LootBlock& lootBlock)
 	if ((attr = node.attribute("text"))) {
 		lootBlock.text = attr.as_string();
 	}
+
+	if ((attr = node.attribute("nameItem"))) {
+		lootBlock.name = attr.as_string();
+	}
+
+	if ((attr = node.attribute("article"))) {
+		lootBlock.article = attr.as_string();
+	}
+
+	if ((attr = node.attribute("attack"))) {
+		lootBlock.attack = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("defense"))) {
+		lootBlock.defense = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("extradefense"))) {
+		lootBlock.extraDefense = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("armor"))) {
+		lootBlock.armor = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("shootrange"))) {
+		lootBlock.shootRange = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("hitchance"))) {
+		lootBlock.hitChance = pugi::cast<int32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("unique"))) {
+		lootBlock.unique = attr.as_bool();
+	}
 	return true;
 }
 
@@ -1355,6 +1396,8 @@ MonsterType* Monsters::getMonsterType(const std::string& name)
 
 void Monsters::addMonsterType(const std::string& name, MonsterType* mType)
 {
+	// Suppress [-Werror=unused-but-set-parameter]
+	// https://stackoverflow.com/questions/1486904/how-do-i-best-silence-a-warning-about-unused-variables
+	(void) mType;
 	mType = &monsters[asLowerCaseString(name)];
 }
-

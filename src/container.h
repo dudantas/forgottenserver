@@ -51,7 +51,7 @@ class Container : public Item, public Cylinder
 	public:
 		explicit Container(uint16_t type);
 		Container(uint16_t type, uint16_t size, bool unlocked = true, bool pagination = false);
-		explicit Container(Tile* tile);
+		explicit Container(Tile* type);
 		~Container();
 
 		// non-copyable
@@ -107,6 +107,8 @@ class Container : public Item, public Cylinder
 		bool isHoldingItem(const Item* item) const;
 
 		uint32_t getItemHoldingCount() const;
+		uint32_t getContainerHoldingCount() const;
+		uint16_t getFreeSlots() const;
 		uint32_t getWeight() const override final;
 
 		bool isUnlocked() const {
@@ -150,22 +152,23 @@ class Container : public Item, public Cylinder
 
 	protected:
 		ItemDeque itemlist;
+		bool pagination;
+		uint32_t maxSize;
 
 	private:
 		std::ostringstream& getContentDescription(std::ostringstream& os) const;
 
-		uint32_t maxSize;
 		uint32_t totalWeight = 0;
 		uint32_t serializationCount = 0;
 
 		bool unlocked;
-		bool pagination;
 
 		void onAddContainerItem(Item* item);
 		void onUpdateContainerItem(uint32_t index, Item* oldItem, Item* newItem);
 		void onRemoveContainerItem(uint32_t index, Item* item);
 
 		Container* getParentContainer();
+		Container* getTopParentContainer() const;
 		void updateItemWeight(int32_t diff);
 
 		friend class ContainerIterator;
