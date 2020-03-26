@@ -375,7 +375,7 @@ Thing* Tile::getTopVisibleThing(const Creature* creature)
 
 void Tile::onAddTileItem(Item* item)
 {
-	if ((item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) || (item->isWrapable() && !item->hasProperty(CONST_PROP_MOVEABLE) && !item->hasProperty(CONST_PROP_BLOCKPATH))) {
+	if (item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			it->second->addItemBack(item);
@@ -405,7 +405,7 @@ void Tile::onAddTileItem(Item* item)
 
 void Tile::onUpdateTileItem(Item* oldItem, const ItemType& oldType, Item* newItem, const ItemType& newType)
 {
-	if ((newItem->hasProperty(CONST_PROP_MOVEABLE) || newItem->getContainer()) || (newItem->isWrapable() && newItem->hasProperty(CONST_PROP_MOVEABLE) && !oldItem->hasProperty(CONST_PROP_BLOCKPATH))) {
+	if (newItem->hasProperty(CONST_PROP_MOVEABLE) || newItem->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			int32_t index = it->second->getThingIndex(oldItem);
@@ -495,7 +495,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 		}
 
 		if (const Monster* monster = creature->getMonster()) {
-			if (hasFlag(TILESTATE_PROTECTIONZONE | TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT) && !monster->isPet()) {
+			if (hasFlag(TILESTATE_PROTECTIONZONE | TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT) && !monster->isSummon()) {
 				return RETURNVALUE_NOTPOSSIBLE;
 			}
 
@@ -546,7 +546,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 					//1) Monster is able to walk over field type
 					//2) Being attacked while random stepping will make it ignore field damages
 					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, tileFlags)) {
-						if (!(monster->canWalkOnFieldType(combatType) || monster->getIgnoreFieldDamage())) {
+						if (!(monster->canWalkOnFieldType(combatType) || monster->isIgnoringFieldDamage())) {
 							return RETURNVALUE_NOTPOSSIBLE;
 						}
 					} else {
@@ -1687,10 +1687,10 @@ ReturnValue HouseTile::queryAdd(int32_t index, const Thing& thing, uint32_t coun
 		}
 		else if (const Monster* monster = creature->getMonster()) {
 			if (monster->isSummon()) {
-				if (monster->isPet() && !house->isInvited(monster->getMaster()->getPlayer())) {
+				if (monster->isSummon() && !house->isInvited(monster->getMaster()->getPlayer())) {
 					return RETURNVALUE_NOTPOSSIBLE;
 				}
-				if (monster->isPet() && house->isInvited(monster->getMaster()->getPlayer()) && (hasFlag(TILESTATE_BLOCKSOLID) || (hasBitSet(FLAG_PATHFINDING, flags) && hasFlag(TILESTATE_NOFIELDBLOCKPATH)))) {
+				if (monster->isSummon() && house->isInvited(monster->getMaster()->getPlayer()) && (hasFlag(TILESTATE_BLOCKSOLID) || (hasBitSet(FLAG_PATHFINDING, flags) && hasFlag(TILESTATE_NOFIELDBLOCKPATH)))) {
 					return RETURNVALUE_NOTPOSSIBLE;
 				} 
 				else {
