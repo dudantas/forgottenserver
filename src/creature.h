@@ -173,6 +173,13 @@ class Creature : virtual public Thing
 			hiddenHealth = b;
 		}
 
+		bool isMoveLocked() const {
+			return moveLocked;
+		}
+		void setMoveLocked(bool locked) {
+			moveLocked = locked;
+		}
+
 		int32_t getThrowRange() const override final {
 			return 1;
 		}
