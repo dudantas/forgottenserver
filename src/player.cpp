@@ -765,6 +765,17 @@ bool Player::isNearDepotBox() const
 	return false;
 }
 
+DepotChest* Player::getDepotBox()
+{
+	DepotChest* depotBoxs = new DepotChest(ITEM_DEPOT);
+	depotBoxs->incrementReferenceCounter();
+	depotBoxs->setMaxDepotItems(getMaxDepotItems()); //check each depotID, if depot limit is 1000, so all depots have 17k items max, causes crash?? I think not
+	for (uint32_t index = 1; index <= 17; ++index) {
+		depotBoxs->internalAddThing(getDepotChest(18 - index, true));
+	}
+	return depotBoxs;
+}
+
 DepotChest* Player::getDepotChest(uint32_t depotId, bool autoCreate)
 {
 	auto it = depotChests.find(depotId);
@@ -776,9 +787,16 @@ DepotChest* Player::getDepotChest(uint32_t depotId, bool autoCreate)
 		return nullptr;
 	}
 
-	DepotChest* depotChest = new DepotChest(ITEM_DEPOT);
+	DepotChest* depotChest;
+	if (depotId > 0 && depotId < 18) {
+		depotChest = new DepotChest(ITEM_DEPOT_NULL + depotId);
+	}
+	else {
+		depotChest = new DepotChest(ITEM_DEPOT);
+	}
+
 	depotChest->incrementReferenceCounter();
-	depotChest->setMaxDepotItems(getMaxDepotItems());
+	//depotChest->setMaxDepotItems(getMaxDepotItems()); why ?? my depot commit don't have this code, is possible add more items in depot with this
 	depotChests[depotId] = depotChest;
 	return depotChest;
 }
@@ -788,6 +806,11 @@ DepotLocker* Player::getDepotLocker(uint32_t depotId)
 	auto it = depotLockerMap.find(depotId);
 	if (it != depotLockerMap.end()) {
 		inbox->setParent(it->second);
+		for (uint8_t i = g_config.getNumber(ConfigManager::DEPOT_BOXES); i > 0; i--) {
+			if (DepotChest* depotBox = getDepotChest(i, false)) {
+				depotBox->setParent(it->second->getItemByIndex(0)->getContainer());
+ 			}
+		}
 		return it->second;
 	}
 
@@ -795,7 +818,13 @@ DepotLocker* Player::getDepotLocker(uint32_t depotId)
 	depotLocker->setDepotId(depotId);
 	depotLocker->internalAddThing(Item::CreateItem(ITEM_MARKET));
 	depotLocker->internalAddThing(inbox);
-	depotLocker->internalAddThing(getDepotChest(depotId, true));
+	Container* depotChest = Item::CreateItemAsContainer(ITEM_DEPOT, g_config.getNumber(ConfigManager::DEPOT_BOXES));
+	for (uint8_t i = g_config.getNumber(ConfigManager::DEPOT_BOXES); i > 0; i--) {
+		DepotChest* depotBox = getDepotChest(i, true);
+		depotChest->internalAddThing(depotBox);
+		depotBox->setParent(depotChest);
+	}
+	depotLocker->internalAddThing(depotChest);
 	depotLockerMap[depotId] = depotLocker;
 	return depotLocker;
 }
