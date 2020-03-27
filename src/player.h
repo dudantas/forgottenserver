@@ -36,8 +36,6 @@
 #include "groups.h"
 #include "town.h"
 #include "mounts.h"
-#include "reward.h"
-#include "rewardchest.h"
 
 class House;
 class NetworkMessage;
@@ -579,11 +577,6 @@ class Player final : public Creature, public Cylinder
 
 		void addConditionSuppressions(uint32_t conditions);
 		void removeConditionSuppressions(uint32_t conditions);
-
-		Reward* getReward(uint32_t rewardId, bool autoCreate);
-		void removeReward(uint32_t rewardId);
-		void getRewardList(std::vector<uint32_t>& rewards);
-		RewardChest* getRewardChest();
 
 		DepotChest* getDepotBox();
 		DepotChest* getDepotChest(uint32_t depotId, bool autoCreate);
@@ -1389,8 +1382,6 @@ class Player final : public Creature, public Cylinder
 		std::map<uint8_t, int64_t> moduleDelayMap;
 		std::map<uint32_t, int32_t> storageMap;
 
-		std::map<uint32_t, Reward*> rewardMap;
-
 		std::vector<OutfitEntry> outfits;
 		GuildWarVector guildWarVector;
 
@@ -1444,7 +1435,6 @@ class Player final : public Creature, public Cylinder
 		SchedulerTask* walkTask = nullptr;
 		Town* town = nullptr;
 		Vocation* vocation = nullptr;
-		RewardChest* rewardChest = nullptr;
 
 		uint32_t inventoryWeight = 0;
 		uint32_t capacity = 40000;
