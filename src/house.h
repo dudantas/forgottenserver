@@ -1,8 +1,6 @@
 /**
- * @file house.h
- * 
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +17,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OT_SRC_HOUSE_H_
-#define OT_SRC_HOUSE_H_
+#ifndef FS_HOUSE_H_EB9732E7771A438F9CD0EFA8CB4C58C4
+#define FS_HOUSE_H_EB9732E7771A438F9CD0EFA8CB4C58C4
 
 #include <regex>
+#include <set>
+#include <unordered_set>
 
 #include "container.h"
 #include "housetile.h"
@@ -38,7 +38,7 @@ class AccessList
 		void parseList(const std::string& list);
 		void addPlayer(const std::string& name);
 		void addGuild(const std::string& name);
-		void addGuildRank(const std::string& name, const std::string& guildName);
+		void addGuildRank(const std::string& name, const std::string& rankName);
 		void addExpression(const std::string& expression);
 
 		bool isInList(const Player* player);
@@ -91,10 +91,9 @@ class Door final : public Item
 
 		void onRemoved() override;
 
-	protected:
+	private:
 		void setHouse(House* house);
 
-	private:
 		House* house = nullptr;
 		std::unique_ptr<AccessList> accessList;
 		friend class House;
@@ -120,14 +119,14 @@ class HouseTransferItem final : public Item
 	public:
 		static HouseTransferItem* createHouseTransferItem(House* house);
 
-		explicit HouseTransferItem(House* newHouse) : Item(0), house(newHouse) {}
+		explicit HouseTransferItem(House* house) : Item(0), house(house) {}
 
 		void onTradeEvent(TradeEvents_t event, Player* owner) override;
 		bool canTransform() const override {
 			return false;
 		}
 
-	protected:
+	private:
 		House* house;
 };
 
@@ -158,8 +157,8 @@ class House
 			return posEntry;
 		}
 
-		void setName(std::string newHouseName) {
-			this->houseName = newHouseName;
+		void setName(std::string houseName) {
+			this->houseName = houseName;
 		}
 		const std::string& getName() const {
 			return houseName;
@@ -177,8 +176,8 @@ class House
 			return paidUntil;
 		}
 
-		void setRent(uint32_t newRent) {
-			this->rent = newRent;
+		void setRent(uint32_t rent) {
+			this->rent = rent;
 		}
 		uint32_t getRent() const {
 			return rent;
@@ -191,8 +190,8 @@ class House
 			return rentWarnings;
 		}
 
-		void setTownId(uint32_t newTownId) {
-			this->townId = newTownId;
+		void setTownId(uint32_t townId) {
+			this->townId = townId;
 		}
 		uint32_t getTownId() const {
 			return townId;
@@ -209,14 +208,14 @@ class House
 
 		HouseTransferItem* getTransferItem();
 		void resetTransferItem();
-		bool executeTransfer(HouseTransferItem* item, Player* player);
+		bool executeTransfer(HouseTransferItem* item, Player* newOwner);
 
 		const HouseTileList& getTiles() const {
 			return houseTiles;
 		}
 
-		const std::list<Door*>& getDoors() const {
-			return doorList;
+		const std::set<Door*>& getDoors() const {
+			return doorSet;
 		}
 
 		void addBed(BedItem* bed);
@@ -237,7 +236,7 @@ class House
 		Container transfer_container{ITEM_LOCKER1};
 
 		HouseTileList houseTiles;
-		std::list<Door*> doorList;
+		std::set<Door*> doorSet;
 		HouseBedItemList bedsList;
 
 		std::string houseName;

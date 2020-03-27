@@ -1,8 +1,6 @@
 /**
- * @file house.cpp
- * 
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,14 +82,28 @@ void House::setOwner(uint32_t guid, bool updateDatabase/* = true*/, Player* play
 		setAccessList(SUBOWNER_LIST, "");
 		setAccessList(GUEST_LIST, "");
 
-		for (Door* door : doorList) {
+		for (Door* door : doorSet) {
 			door->setAccessList("");
 		}
+	} else {
+		std::string strRentPeriod = asLowerCaseString(g_config.getString(ConfigManager::HOUSE_RENT_PERIOD));
+		time_t currentTime = time(nullptr);
+		if (strRentPeriod == "yearly") {
+		    currentTime += 24 * 60 * 60 * 365;
+		} else if (strRentPeriod == "monthly") {
+		    currentTime += 24 * 60 * 60 * 30;
+		} else if (strRentPeriod == "weekly") {
+		    currentTime += 24 * 60 * 60 * 7;
+		} else if (strRentPeriod == "daily") {
+		    currentTime += 24 * 60 * 60;
+		} else {
+		    currentTime = 0;
+		}
 
-		//reset paid date
-		paidUntil = 0;
-		rentWarnings = 0;
+		paidUntil = currentTime;
 	}
+
+	rentWarnings = 0;
 
 	if (guid != 0) {
 		std::string name = IOLoginData::getNameByGuid(guid);
@@ -118,7 +130,7 @@ void House::updateDoorDescription() const
 		}
 	}
 
-	for (const auto& it : doorList) {
+	for (const auto& it : doorSet) {
 		it->setSpecialDescription(ss.str());
 	}
 }
@@ -277,17 +289,17 @@ bool House::isInvited(const Player* player)
 void House::addDoor(Door* door)
 {
 	door->incrementReferenceCounter();
-	doorList.push_back(door);
+	doorSet.insert(door);
 	door->setHouse(this);
 	updateDoorDescription();
 }
 
 void House::removeDoor(Door* door)
 {
-	auto it = std::find(doorList.begin(), doorList.end(), door);
-	if (it != doorList.end()) {
+	auto it = doorSet.find(door);
+	if (it != doorSet.end()) {
 		door->decrementReferenceCounter();
-		doorList.erase(it);
+		doorSet.erase(it);
 	}
 }
 
@@ -299,7 +311,7 @@ void House::addBed(BedItem* bed)
 
 Door* House::getDoorByNumber(uint32_t doorId) const
 {
-	for (Door* door : doorList) {
+	for (Door* door : doorSet) {
 		if (door->getDoorId() == doorId) {
 			return door;
 		}
@@ -309,7 +321,7 @@ Door* House::getDoorByNumber(uint32_t doorId) const
 
 Door* House::getDoorByPosition(const Position& pos)
 {
-	for (Door* door : doorList) {
+	for (Door* door : doorSet) {
 		if (door->getPosition() == pos) {
 			return door;
 		}
@@ -393,18 +405,18 @@ bool House::executeTransfer(HouseTransferItem* item, Player* newOwner)
 	return true;
 }
 
-void AccessList::parseList(const std::string& listToParse)
+void AccessList::parseList(const std::string& list)
 {
 	playerList.clear();
 	guildRankList.clear();
 	expressionList.clear();
 	regExList.clear();
-	this->list = listToParse;
-	if (listToParse.empty()) {
+	this->list = list;
+	if (list.empty()) {
 		return;
 	}
 
-	std::istringstream listStream(listToParse);
+	std::istringstream listStream(list);
 	std::string line;
 
 	while (getline(listStream, line)) {
@@ -476,11 +488,11 @@ void AccessList::addGuild(const std::string& name)
 	}
 }
 
-void AccessList::addGuildRank(const std::string& name, const std::string& guildName)
+void AccessList::addGuildRank(const std::string& name, const std::string& rankName)
 {
-	const Guild* guild = getGuildByName(guildName);
+	const Guild* guild = getGuildByName(name);
 	if (guild) {
-		const GuildRank_ptr rank = guild->getRankByName(name);
+		GuildRank_ptr rank = guild->getRankByName(rankName);
 		if (rank) {
 			guildRankList.insert(rank->id);
 		}
@@ -542,9 +554,9 @@ bool AccessList::isInList(const Player* player)
 	return rank && guildRankList.find(rank->id) != guildRankList.end();
 }
 
-void AccessList::getList(std::string& retList) const
+void AccessList::getList(std::string& list) const
 {
-	retList = this->list;
+	list = this->list;
 }
 
 Door::Door(uint16_t type) :	Item(type) {}
@@ -563,13 +575,13 @@ Attr_ReadValue Door::readAttr(AttrTypes_t attr, PropStream& propStream)
 	return Item::readAttr(attr, propStream);
 }
 
-void Door::setHouse(House* newHouse)
+void Door::setHouse(House* house)
 {
 	if (this->house != nullptr) {
 		return;
 	}
 
-	this->house = newHouse;
+	this->house = house;
 
 	if (!accessList) {
 		accessList.reset(new AccessList());
@@ -659,8 +671,8 @@ bool Houses::loadHousesXML(const std::string& filename)
 		);
 		if (entryPos.x == 0 && entryPos.y == 0 && entryPos.z == 0) {
 			std::cout << "[Warning - Houses::loadHousesXML] House entry not set"
-						<< " - Name: " << house->getName()
-						<< " - House id: " << houseId << std::endl;
+					    << " - Name: " << house->getName()
+					    << " - House id: " << houseId << std::endl;
 		}
 		house->setEntryPos(entryPos);
 
