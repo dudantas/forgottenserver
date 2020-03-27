@@ -867,6 +867,10 @@ class LuaScriptInterface
 
 		static int luaPlayerGetFreeCapacity(lua_State* L);
 
+		static int luaPlayerGetReward(lua_State* L);
+		static int luaPlayerRemoveReward(lua_State* L);
+		static int luaPlayerGetRewardList(lua_State* L);
+
 		static int luaPlayerSendInventory(lua_State* L);
  		static int luaPlayerUpdateSupplyTracker(lua_State* L);
 

@@ -154,14 +154,13 @@ class Container : public Item, public Cylinder
 		ItemDeque itemlist;
 		bool pagination;
 		uint32_t maxSize;
+		bool unlocked;
 
 	private:
 		std::ostringstream& getContentDescription(std::ostringstream& os) const;
 
 		uint32_t totalWeight = 0;
 		uint32_t serializationCount = 0;
-
-		bool unlocked;
 
 		void onAddContainerItem(Item* item);
 		void onUpdateContainerItem(uint32_t index, Item* oldItem, Item* newItem);
